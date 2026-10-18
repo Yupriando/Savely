@@ -132,19 +132,29 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       await sync.add(tx);
     }
     if (!mounted) return;
-    final online = ref.read(apiProvider).online.value;
+
+    // Sheet langsung ditutup. Widget ini ikut hilang, jadi pakai navigator utama & container.
+    final overlay = Navigator.of(context, rootNavigator: true).overlay!;
+    final container = ProviderScope.containerOf(context);
+    final label = '${_type.label} ${rupiah(amount)}';
+    final isEdit = _isEdit;
+    final sound = !isEdit && _type.isIncome ? Sfx.coin : null; // uang masuk -> bunyi koin
     Navigator.pop(context);
-    showSuccess(
-      context,
-      _isEdit
+
+    // Coba kirim sebentar (maks 2,5 detik) supaya pesannya jujur: terkirim, atau disimpan di HP dulu.
+    // Saat benar-benar offline gagalnya seketika, jadi pesan langsung muncul.
+    final sending = sync.syncNow(retryFailed: true);
+    await Future.any([sending, Future<void>.delayed(const Duration(milliseconds: 2500))]);
+    final sent = !container.read(syncProvider).pending.any((p) => p.clientId == tx.clientId);
+    showSuccessOn(
+      overlay,
+      isEdit
           ? 'Transaksi diperbarui'
-          : online
-          ? '${_type.label} ${rupiah(amount)}\ndicatat'
-          : '${_type.label} ${rupiah(amount)}\ndisimpan di HP, dikirim saat online',
-      // Uang masuk -> bunyi koin
-      sound: !_isEdit && _type.isIncome ? Sfx.coin : null,
+          : sent
+          ? '$label\ndicatat'
+          : '$label\ndisimpan di HP, dikirim saat online',
+      sound: sound,
     );
-    unawaited(sync.syncNow(retryFailed: true));
   }
 
   Future<void> _delete() async {

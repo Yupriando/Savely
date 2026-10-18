@@ -16,6 +16,10 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(shellTabProvider);
+    // Ambil kategori & dompet sejak awal (dan simpan di HP) supaya form "Catat"
+    // tetap bisa dipakai kalau tiba-tiba offline.
+    ref.watch(categoriesProvider);
+    ref.watch(walletsProvider);
 
     return Scaffold(
       body: _FadeIndexedStack(

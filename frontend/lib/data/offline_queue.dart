@@ -138,7 +138,7 @@ final syncProvider = NotifierProvider<SyncController, SyncState>(SyncController.
 /// Antrean transaksi offline + pengiriman otomatis saat internet tersedia.
 class SyncController extends Notifier<SyncState> {
   static const storageKey = 'pending_transactions';
-  static const _retryEvery = Duration(seconds: 20);
+  static const _retryEvery = Duration(seconds: 15);
 
   Timer? _timer;
   StreamSubscription<List<ConnectivityResult>>? _connectivity;
@@ -152,9 +152,31 @@ class SyncController extends Notifier<SyncState> {
       _lifecycle?.dispose();
     });
     _listenForConnection();
+
+    // Server kembali bisa dihubungi -> kirim antrean & muat ulang data yang tadinya dari cache
+    final api = ref.read(apiProvider);
+    var wasOnline = api.online.value;
+    void onOnlineChanged() {
+      final online = api.online.value;
+      if (online && !wasOnline) {
+        syncNow();
+        invalidateFinance(ref.invalidate);
+      }
+      wasOnline = online;
+    }
+
+    api.online.addListener(onOnlineChanged);
+    ref.onDispose(() => api.online.removeListener(onOnlineChanged));
+
+    // Setiap 15 detik: kirim antrean yang tersisa, dan selama offline cek apakah server
+    // sudah bisa dihubungi lagi (cukup muat ulang data dompet yang kecil).
+    _timer = Timer.periodic(_retryEvery, (_) {
+      if (!api.online.value) ref.invalidate(walletsProvider);
+      if (state.pending.any((p) => p.error == null)) syncNow();
+    });
+
     final loaded = SyncState(pending: _load());
     if (loaded.pending.isNotEmpty) Future.microtask(syncNow);
-    _scheduleRetry(loaded);
     return loaded;
   }
 
@@ -173,7 +195,6 @@ class SyncController extends Notifier<SyncState> {
 
   Future<void> _save(List<PendingTx> list) async {
     state = state.copyWith(pending: list);
-    _scheduleRetry(state);
     await ref
         .read(sharedPrefsProvider)
         .setString(storageKey, jsonEncode(list.map((p) => p.toJson()).toList()));
@@ -197,17 +218,6 @@ class SyncController extends Notifier<SyncState> {
     try {
       _lifecycle = AppLifecycleListener(onResume: syncNow);
     } catch (_) {}
-  }
-
-  /// Selama masih ada yang belum terkirim, coba lagi berkala.
-  void _scheduleRetry(SyncState s) {
-    final needsRetry = s.pending.any((p) => p.error == null);
-    if (needsRetry && _timer == null) {
-      _timer = Timer.periodic(_retryEvery, (_) => syncNow());
-    } else if (!needsRetry) {
-      _timer?.cancel();
-      _timer = null;
-    }
   }
 
   Future<void> add(PendingTx tx) => _save([...state.pending, tx]);

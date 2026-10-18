@@ -9,8 +9,13 @@ import '../core/theme.dart';
 
 /// Tampilkan animasi sukses (lingkaran + centang tergambar) di atas semua layar.
 /// [confetti] = true untuk momen spesial, misalnya target wishlist tercapai.
-void showSuccess(BuildContext context, String message, {bool confetti = false, Sfx? sound}) {
-  final overlay = Overlay.of(context, rootOverlay: true);
+void showSuccess(BuildContext context, String message, {bool confetti = false, Sfx? sound}) =>
+    showSuccessOn(Overlay.of(context, rootOverlay: true), message, confetti: confetti, sound: sound);
+
+/// Sama seperti [showSuccess], untuk dipanggil setelah layar asalnya sudah ditutup
+/// (pakai `Navigator.of(context, rootNavigator: true).overlay` yang diambil sebelum menutup).
+void showSuccessOn(OverlayState overlay, String message, {bool confetti = false, Sfx? sound}) {
+  if (!overlay.mounted) return;
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (_) => _SuccessView(message: message, confetti: confetti, onDone: () => entry.remove()),
