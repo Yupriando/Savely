@@ -7,9 +7,13 @@ import { buildOpenApiDocument } from './docs/openapi';
 import { requireAuth } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { authRouter } from './modules/auth/auth.routes';
+import { billsRouter } from './modules/bills/bills.routes';
+import { budgetsRouter } from './modules/budgets/budgets.routes';
 import { categoriesRouter } from './modules/categories/categories.routes';
+import { insightsRouter } from './modules/reports/insights.routes';
 import { reportsRouter } from './modules/reports/reports.routes';
 import { transactionsRouter } from './modules/transactions/transactions.routes';
+import { walletsRouter } from './modules/wallets/wallets.routes';
 import { wishlistsRouter } from './modules/wishlists/wishlists.routes';
 
 export function createApp() {
@@ -29,7 +33,10 @@ export function createApp() {
   api.use('/categories', requireAuth, categoriesRouter);
   api.use('/transactions', requireAuth, transactionsRouter);
   api.use('/wishlists', requireAuth, wishlistsRouter);
-  api.use('/reports', requireAuth, reportsRouter);
+  api.use('/reports', requireAuth, reportsRouter, insightsRouter);
+  api.use('/wallets', requireAuth, walletsRouter);
+  api.use('/budgets', requireAuth, budgetsRouter);
+  api.use('/bills', requireAuth, billsRouter);
   app.use('/api', api);
 
   const openApiDocument = buildOpenApiDocument();

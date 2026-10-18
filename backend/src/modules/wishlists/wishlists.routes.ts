@@ -5,6 +5,7 @@ import { registry, z } from '../../docs/registry';
 import { daysBetween, today } from '../../lib/dates';
 import { HttpError, unwrap } from '../../lib/errors';
 import { validate } from '../../lib/validate';
+import { getDefaultWalletId } from '../../lib/wallets';
 
 const wishlistStatus = z.enum(['active', 'achieved', 'cancelled']).openapi({
   description: 'active = sedang menabung, achieved = tercapai, cancelled = batal',
@@ -48,6 +49,8 @@ const SavingSchema = registry.register(
     saving_date: dateString,
     note: z.string().nullable(),
     created_at: z.string(),
+    wallet_id: z.string().uuid(),
+    wallet: z.object({ id: z.string(), name: z.string(), icon: z.string(), color: z.string() }),
   }),
 );
 
@@ -71,6 +74,11 @@ const SavingBody = z.object({
     .openapi({ example: 50000, description: 'Positif = setor, negatif = tarik kembali' }),
   saving_date: dateString.optional().openapi({ description: 'Default: hari ini' }),
   note: z.string().max(255).nullable().optional(),
+  wallet_id: z
+    .string()
+    .uuid()
+    .optional()
+    .openapi({ description: 'Dompet sumber (setor) / tujuan (tarik). Default: dompet utama' }),
 });
 
 const UpdateSavingBody = SavingBody.partial().refine((b) => Object.keys(b).length > 0, {
@@ -83,7 +91,8 @@ const SavingParams = IdParams.extend({
 
 const PROGRESS_COLUMNS =
   'id, name, target_amount, target_date, note, image_url, status, achieved_at, created_at, saved_amount, remaining_amount, progress_percent';
-const SAVING_COLUMNS = 'id, wishlist_id, amount, saving_date, note, created_at';
+const SAVING_COLUMNS =
+  'id, wishlist_id, amount, saving_date, note, created_at, wallet_id, wallet:wallets(id, name, icon, color)';
 
 type ProgressRow = {
   target_date: string;
@@ -292,7 +301,13 @@ wishlistsRouter.post('/:id/savings', async (req, res) => {
   unwrap(
     await req.db
       .from('wishlist_savings')
-      .insert({ ...body, saving_date: body.saving_date ?? today(), wishlist_id: id, user_id: req.user.id })
+      .insert({
+        ...body,
+        saving_date: body.saving_date ?? today(),
+        wallet_id: body.wallet_id ?? (await getDefaultWalletId(req.db)),
+        wishlist_id: id,
+        user_id: req.user.id,
+      })
       .select('id')
       .single(),
   );

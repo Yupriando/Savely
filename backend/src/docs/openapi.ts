@@ -25,7 +25,10 @@ export function buildOpenApiDocument() {
       { name: 'Categories', description: 'Kategori pemasukan & pengeluaran' },
       { name: 'Transactions', description: 'Catatan pemasukan & pengeluaran' },
       { name: 'Wishlists', description: 'Barang impian & tabungannya' },
-      { name: 'Reports', description: 'Laporan harian, bulanan & tren' },
+      { name: 'Reports', description: 'Laporan harian, bulanan, tren & insight' },
+      { name: 'Wallets', description: 'Dompet (tunai, bank, e-wallet) & transfer antar dompet' },
+      { name: 'Budgets', description: 'Anggaran bulanan per kategori' },
+      { name: 'Bills', description: 'Tagihan & pemasukan rutin bulanan' },
     ],
   });
 }
