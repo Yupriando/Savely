@@ -38,10 +38,7 @@ class AppTheme {
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 
-    final scheme = ColorScheme.fromSeed(
-      seedColor: AppColors.emerald,
-      brightness: brightness,
-    ).copyWith(
+    final scheme = ColorScheme.fromSeed(seedColor: AppColors.emerald, brightness: brightness).copyWith(
       primary: isDark ? AppColors.emerald : AppColors.emeraldDeep,
       onPrimary: Colors.white,
       primaryContainer: isDark ? const Color(0xFF0D3B2E) : const Color(0xFFD1FAE5),
@@ -61,10 +58,9 @@ class AppTheme {
     );
 
     final base = ThemeData(useMaterial3: true, colorScheme: scheme, brightness: brightness);
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
-      bodyColor: scheme.onSurface,
-      displayColor: scheme.onSurface,
-    );
+    final textTheme = GoogleFonts.plusJakartaSansTextTheme(
+      base.textTheme,
+    ).apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
 
     final radius = BorderRadius.circular(16);
 
@@ -153,9 +149,7 @@ class AppTheme {
         backgroundColor: scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         showDragHandle: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: scheme.surfaceContainerLow,

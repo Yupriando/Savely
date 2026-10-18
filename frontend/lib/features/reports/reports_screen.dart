@@ -10,6 +10,7 @@ import '../../data/providers.dart';
 import '../../widgets/category_icon.dart';
 import '../../widgets/common.dart';
 import '../../widgets/transaction_tile.dart';
+import '../../widgets/insight_card.dart';
 import '../transactions/transaction_form_sheet.dart';
 import 'report_calendar.dart';
 
@@ -83,6 +84,7 @@ class _MonthlyView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final report = ref.watch(monthlyReportProvider(month));
     final trend = ref.watch(trendProvider);
+    final insights = ref.watch(insightsProvider(month));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -96,21 +98,37 @@ class _MonthlyView extends ConsumerWidget {
           builder: (r) => Column(
             key: ValueKey(month),
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _SummaryGrid(summary: r.summary),
-              const SizedBox(height: 16),
-              _ChartCard(
-                title: 'Arus kas harian',
-                child: _DailyBarChart(days: r.dailyTotals),
-              ),
-              const SizedBox(height: 16),
-              _CategoryBreakdown(title: 'Pengeluaran per kategori', items: r.expenseByCategory),
-              const SizedBox(height: 16),
-              _CategoryBreakdown(title: 'Pemasukan per kategori', items: r.incomeByCategory),
-            ]
-                .animate(interval: 80.ms)
-                .fadeIn(duration: 400.ms)
-                .moveY(begin: 16, end: 0, curve: Curves.easeOutCubic),
+            children:
+                [
+                      _SummaryGrid(summary: r.summary),
+                      ...insights.maybeWhen(
+                        data: (items) => items.isEmpty
+                            ? const <Widget>[]
+                            : [
+                                const SizedBox(height: 16),
+                                const SectionTitle('Insight'),
+                                const SizedBox(height: 8),
+                                for (final i in items)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: InsightCard(insight: i),
+                                  ),
+                              ],
+                        orElse: () => const <Widget>[],
+                      ),
+                      const SizedBox(height: 16),
+                      _ChartCard(
+                        title: 'Arus kas harian',
+                        child: _DailyBarChart(days: r.dailyTotals),
+                      ),
+                      const SizedBox(height: 16),
+                      _CategoryBreakdown(title: 'Pengeluaran per kategori', items: r.expenseByCategory),
+                      const SizedBox(height: 16),
+                      _CategoryBreakdown(title: 'Pemasukan per kategori', items: r.incomeByCategory),
+                    ]
+                    .animate(interval: 80.ms)
+                    .fadeIn(duration: 400.ms)
+                    .moveY(begin: 16, end: 0, curve: Curves.easeOutCubic),
           ),
         ),
         const SizedBox(height: 16),
@@ -170,36 +188,39 @@ class _DailyView extends ConsumerWidget {
           builder: (r) => Column(
             key: ValueKey(day),
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _SummaryGrid(summary: r.summary),
-              const SizedBox(height: 16),
-              _CategoryBreakdown(title: 'Pengeluaran per kategori', items: r.expenseByCategory),
-              const SizedBox(height: 16),
-              _ChartCard(
-                title: 'Daftar transaksi',
-                child: r.transactions.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          'Tidak ada transaksi di hari ini',
-                          textAlign: TextAlign.center,
-                          style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          for (final t in r.transactions)
-                            TransactionTile(
-                              transaction: t,
-                              onTap: () => showTransactionForm(context, existing: t),
-                            ),
-                        ],
+            children:
+                [
+                      _SummaryGrid(summary: r.summary),
+                      const SizedBox(height: 16),
+                      _CategoryBreakdown(title: 'Pengeluaran per kategori', items: r.expenseByCategory),
+                      const SizedBox(height: 16),
+                      _ChartCard(
+                        title: 'Daftar transaksi',
+                        child: r.transactions.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                child: Text(
+                                  'Tidak ada transaksi di hari ini',
+                                  textAlign: TextAlign.center,
+                                  style: context.text.bodyMedium?.copyWith(
+                                    color: context.colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  for (final t in r.transactions)
+                                    TransactionTile(
+                                      transaction: t,
+                                      onTap: () => showTransactionForm(context, existing: t),
+                                    ),
+                                ],
+                              ),
                       ),
-              ),
-            ]
-                .animate(interval: 80.ms)
-                .fadeIn(duration: 400.ms)
-                .moveY(begin: 16, end: 0, curve: Curves.easeOutCubic),
+                    ]
+                    .animate(interval: 80.ms)
+                    .fadeIn(duration: 400.ms)
+                    .moveY(begin: 16, end: 0, curve: Curves.easeOutCubic),
           ),
         ),
       ],
@@ -265,6 +286,15 @@ class _SummaryGrid extends StatelessWidget {
             ),
           ],
         ),
+        if (summary.saved != 0) ...[
+          const SizedBox(height: 12),
+          _StatCard(
+            label: 'Ditabung ke wishlist',
+            value: summary.saved,
+            color: AppColors.gold,
+            icon: Icons.savings_rounded,
+          ),
+        ],
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
@@ -275,14 +305,13 @@ class _SummaryGrid extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                positive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                color: Colors.white,
-              ),
+              Icon(positive ? Icons.trending_up_rounded : Icons.trending_down_rounded, color: Colors.white),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  positive ? 'Selisih (hemat)' : 'Selisih (boros)',
+                  summary.saved != 0
+                      ? (positive ? 'Sisa setelah ditabung' : 'Kurang setelah ditabung')
+                      : (positive ? 'Selisih (hemat)' : 'Selisih (boros)'),
                   style: context.text.titleSmall?.copyWith(color: Colors.white),
                 ),
               ),
@@ -322,7 +351,10 @@ class _StatCard extends StatelessWidget {
                   child: Icon(icon, size: 16, color: color),
                 ),
                 const SizedBox(width: 8),
-                Text(label, style: context.text.labelMedium?.copyWith(color: context.colors.onSurfaceVariant)),
+                Text(
+                  label,
+                  style: context.text.labelMedium?.copyWith(color: context.colors.onSurfaceVariant),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -363,25 +395,25 @@ class _ChartCard extends StatelessWidget {
 }
 
 Widget _axisLabel(BuildContext context, String text) => Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Text(text, style: context.text.labelSmall?.copyWith(color: context.colors.onSurfaceVariant)),
-    );
+  padding: const EdgeInsets.only(top: 6),
+  child: Text(text, style: context.text.labelSmall?.copyWith(color: context.colors.onSurfaceVariant)),
+);
 
 BarTouchData _barTouch(BuildContext context, String Function(int group) title) => BarTouchData(
-      touchTooltipData: BarTouchTooltipData(
-        getTooltipColor: (_) => context.colors.inverseSurface,
-        getTooltipItem: (group, _, rod, rodIndex) => BarTooltipItem(
-          rodIndex == 0 ? '${title(group.x)}\n' : '',
-          TextStyle(color: context.colors.onInverseSurface, fontWeight: FontWeight.w600, fontSize: 12),
-          children: [
-            TextSpan(
-              text: rupiah(rod.toY.round()),
-              style: TextStyle(color: rod.color, fontWeight: FontWeight.w800),
-            ),
-          ],
+  touchTooltipData: BarTouchTooltipData(
+    getTooltipColor: (_) => context.colors.inverseSurface,
+    getTooltipItem: (group, _, rod, rodIndex) => BarTooltipItem(
+      rodIndex == 0 ? '${title(group.x)}\n' : '',
+      TextStyle(color: context.colors.onInverseSurface, fontWeight: FontWeight.w600, fontSize: 12),
+      children: [
+        TextSpan(
+          text: rupiah(rod.toY.round()),
+          style: TextStyle(color: rod.color, fontWeight: FontWeight.w800),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
 
 class _DailyBarChart extends StatelessWidget {
   const _DailyBarChart({required this.days});
@@ -559,32 +591,33 @@ class _CategoryBreakdownState extends State<_CategoryBreakdown> {
                     alignment: Alignment.center,
                     children: [
                       PieChart(
-                        PieChartData(
-                          sectionsSpace: 3,
-                          centerSpaceRadius: 62,
-                          startDegreeOffset: -90,
-                          pieTouchData: PieTouchData(
-                            touchCallback: (event, response) {
-                              if (!event.isInterestedForInteractions || response?.touchedSection == null) {
-                                if (_touched != -1) setState(() => _touched = -1);
-                                return;
-                              }
-                              setState(() => _touched = response!.touchedSection!.touchedSectionIndex);
-                            },
-                          ),
-                          sections: [
-                            for (var i = 0; i < items.length; i++)
-                              PieChartSectionData(
-                                value: items[i].total.toDouble(),
-                                color: items[i].color,
-                                radius: i == _touched ? 30 : 22,
-                                showTitle: false,
+                            PieChartData(
+                              sectionsSpace: 3,
+                              centerSpaceRadius: 62,
+                              startDegreeOffset: -90,
+                              pieTouchData: PieTouchData(
+                                touchCallback: (event, response) {
+                                  if (!event.isInterestedForInteractions ||
+                                      response?.touchedSection == null) {
+                                    if (_touched != -1) setState(() => _touched = -1);
+                                    return;
+                                  }
+                                  setState(() => _touched = response!.touchedSection!.touchedSectionIndex);
+                                },
                               ),
-                          ],
-                        ),
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      )
+                              sections: [
+                                for (var i = 0; i < items.length; i++)
+                                  PieChartSectionData(
+                                    value: items[i].total.toDouble(),
+                                    color: items[i].color,
+                                    radius: i == _touched ? 30 : 22,
+                                    showTitle: false,
+                                  ),
+                              ],
+                            ),
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          )
                           .animate()
                           .rotate(begin: -0.25, end: 0, duration: 800.ms, curve: Curves.easeOutCubic)
                           .scaleXY(begin: 0.6, end: 1, duration: 800.ms, curve: Curves.easeOutBack),
@@ -596,11 +629,14 @@ class _CategoryBreakdownState extends State<_CategoryBreakdown> {
                           children: [
                             Text(
                               _touched >= 0 && _touched < items.length ? items[_touched].name : 'Total',
-                              style: context.text.labelMedium?.copyWith(color: context.colors.onSurfaceVariant),
+                              style: context.text.labelMedium?.copyWith(
+                                color: context.colors.onSurfaceVariant,
+                              ),
                             ),
                             Text(
                               rupiahCompact(
-                                  _touched >= 0 && _touched < items.length ? items[_touched].total : total),
+                                _touched >= 0 && _touched < items.length ? items[_touched].total : total,
+                              ),
                               style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                             ),
                           ],

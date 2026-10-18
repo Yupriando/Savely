@@ -87,7 +87,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       // Diperkecil di HP supaya upload cepat & di bawah batas 2 MB
       file = await _picker.pickImage(source: source, maxWidth: 600, maxHeight: 600, imageQuality: 85);
     } catch (e) {
-      if (mounted) showSnack(context, 'Tidak bisa membuka ${source == ImageSource.camera ? 'kamera' : 'galeri'}', error: true);
+      if (mounted) {
+        showSnack(
+          context,
+          'Tidak bisa membuka ${source == ImageSource.camera ? 'kamera' : 'galeri'}',
+          error: true,
+        );
+      }
       return;
     }
     if (file == null) return;
@@ -100,11 +106,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() => _uploading = true);
     try {
-      await ref.read(authProvider.notifier).uploadAvatar(
-            bytes,
-            filename: file.name,
-            mimeType: _mimeOf(file),
-          );
+      await ref.read(authProvider.notifier).uploadAvatar(bytes, filename: file.name, mimeType: _mimeOf(file));
       if (mounted) showSuccess(context, 'Foto profil diperbarui');
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
@@ -153,10 +155,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() => _saving = true);
     try {
-      final user = await ref.read(authProvider.notifier).updateProfile(
-            fullName: nameChanged ? name : null,
-            email: emailChanged ? email : null,
-          );
+      final user = await ref
+          .read(authProvider.notifier)
+          .updateProfile(fullName: nameChanged ? name : null, email: emailChanged ? email : null);
       if (!mounted) return;
       if (emailChanged && user.pendingEmail != null) {
         showSnack(context, 'Cek inbox ${user.pendingEmail} untuk konfirmasi email baru');
@@ -181,150 +182,172 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          children: [
-            Center(
-              child: Pressable(
-                onTap: _uploading ? null : _showPhotoOptions,
-                child: SizedBox(
-                  width: 128,
-                  height: 128,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Hanya cincin gradien yang berputar pelan, fotonya diam
-                      Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: SweepGradient(
-                            colors: [AppColors.emerald, AppColors.gold, AppColors.mint, AppColors.emerald],
-                          ),
-                        ),
-                      ).animate(onPlay: (c) => c.repeat()).rotate(duration: 8.seconds),
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: context.colors.surface),
-                      ),
-                      Hero(tag: 'avatar', child: UserAvatar(user: user, size: 112)),
-                      if (_uploading)
-                        Container(
-                          width: 112,
-                          height: 112,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black.withValues(alpha: 0.45),
-                          ),
-                          alignment: Alignment.center,
-                          child: const CircularProgressIndicator(color: Colors.white),
-                        ).animate().fadeIn(duration: 200.ms),
-                      Positioned(
-                        right: 0,
-                        bottom: 4,
-                        child: Container(
-                          padding: const EdgeInsets.all(9),
-                          decoration: BoxDecoration(
-                            color: context.colors.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: context.colors.surface, width: 3),
-                          ),
-                          child: const Icon(Icons.photo_camera_rounded, color: Colors.white, size: 18),
-                        ).animate().scale(delay: 300.ms, duration: 400.ms, curve: Curves.elasticOut),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Center(
-              child: Text(
-                'Ketuk foto untuk mengganti',
-                style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
-              ),
-            ),
-            const SizedBox(height: 28),
-            Text('Nama', style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _name,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                hintText: 'Nama kamu',
-                prefixIcon: Icon(Icons.person_rounded),
-              ),
-              validator: (v) {
-                final value = v?.trim() ?? '';
-                if (value.isEmpty) return 'Nama wajib diisi';
-                if (value.length > 100) return 'Maksimal 100 karakter';
-                return null;
-              },
-            ),
-            const SizedBox(height: 18),
-            Text('Email', style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.done,
-              onFieldSubmitted: (_) => _save(),
-              decoration: const InputDecoration(
-                hintText: 'Email',
-                prefixIcon: Icon(Icons.alternate_email_rounded),
-              ),
-              validator: (v) {
-                final value = v?.trim() ?? '';
-                if (value.isEmpty) return 'Email wajib diisi';
-                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) return 'Format email tidak valid';
-                return null;
-              },
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              child: user?.pendingEmail == null
-                  ? const SizedBox(width: double.infinity)
-                  : Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.mark_email_unread_rounded, color: AppColors.gold, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Menunggu konfirmasi: ${user!.pendingEmail}',
-                                style: context.text.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+          children:
+              [
+                    Center(
+                      child: Pressable(
+                        onTap: _uploading ? null : _showPhotoOptions,
+                        child: SizedBox(
+                          width: 128,
+                          height: 128,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            clipBehavior: Clip.none,
+                            children: [
+                              // Hanya cincin gradien yang berputar pelan, fotonya diam
+                              Container(
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: SweepGradient(
+                                    colors: [
+                                      AppColors.emerald,
+                                      AppColors.gold,
+                                      AppColors.mint,
+                                      AppColors.emerald,
+                                    ],
+                                  ),
+                                ),
+                              ).animate(onPlay: (c) => c.repeat()).rotate(duration: 8.seconds),
+                              Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: context.colors.surface,
+                                ),
                               ),
-                            ),
-                          ],
+                              Hero(
+                                tag: 'avatar',
+                                child: UserAvatar(user: user, size: 112),
+                              ),
+                              if (_uploading)
+                                Container(
+                                  width: 112,
+                                  height: 112,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const CircularProgressIndicator(color: Colors.white),
+                                ).animate().fadeIn(duration: 200.ms),
+                              Positioned(
+                                right: 0,
+                                bottom: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(9),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: context.colors.surface, width: 3),
+                                  ),
+                                  child: const Icon(
+                                    Icons.photo_camera_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ).animate().scale(delay: 300.ms, duration: 400.ms, curve: Curves.elasticOut),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-            ),
-            const SizedBox(height: 32),
-            FilledButton(
-              onPressed: _saving || _uploading ? null : _save,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _saving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                      )
-                    : const Text('Simpan'),
-              ),
-            ),
-          ]
-              .animate(interval: 50.ms)
-              .fadeIn(duration: 350.ms)
-              .moveY(begin: 14, end: 0, curve: Curves.easeOutCubic),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        'Ketuk foto untuk mengganti',
+                        style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Text('Nama', style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _name,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        hintText: 'Nama kamu',
+                        prefixIcon: Icon(Icons.person_rounded),
+                      ),
+                      validator: (v) {
+                        final value = v?.trim() ?? '';
+                        if (value.isEmpty) return 'Nama wajib diisi';
+                        if (value.length > 100) return 'Maksimal 100 karakter';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    Text('Email', style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _save(),
+                      decoration: const InputDecoration(
+                        hintText: 'Email',
+                        prefixIcon: Icon(Icons.alternate_email_rounded),
+                      ),
+                      validator: (v) {
+                        final value = v?.trim() ?? '';
+                        if (value.isEmpty) return 'Email wajib diisi';
+                        if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+                          return 'Format email tidak valid';
+                        }
+                        return null;
+                      },
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      child: user?.pendingEmail == null
+                          ? const SizedBox(width: double.infinity)
+                          : Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.gold.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.mark_email_unread_rounded,
+                                      color: AppColors.gold,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Menunggu konfirmasi: ${user!.pendingEmail}',
+                                        style: context.text.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 32),
+                    FilledButton(
+                      onPressed: _saving || _uploading ? null : _save,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: _saving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                              )
+                            : const Text('Simpan'),
+                      ),
+                    ),
+                  ]
+                  .animate(interval: 50.ms)
+                  .fadeIn(duration: 350.ms)
+                  .moveY(begin: 14, end: 0, curve: Curves.easeOutCubic),
         ),
       ),
     );
@@ -351,7 +374,10 @@ class _SheetOption extends StatelessWidget {
         decoration: BoxDecoration(color: c.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
         child: Icon(icon, color: c),
       ),
-      title: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+      title: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

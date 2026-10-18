@@ -12,11 +12,7 @@ void showSuccess(BuildContext context, String message, {bool confetti = false}) 
   final overlay = Overlay.of(context, rootOverlay: true);
   late OverlayEntry entry;
   entry = OverlayEntry(
-    builder: (_) => _SuccessView(
-      message: message,
-      confetti: confetti,
-      onDone: () => entry.remove(),
-    ),
+    builder: (_) => _SuccessView(message: message, confetti: confetti, onDone: () => entry.remove()),
   );
   overlay.insert(entry);
   HapticFeedback.mediumImpact();
@@ -40,9 +36,18 @@ class _SuccessViewState extends State<_SuccessView> with SingleTickerProviderSta
   )..forward().whenComplete(widget.onDone);
 
   // Tahapan animasi dalam satu timeline
-  late final _appear = CurvedAnimation(parent: _c, curve: const Interval(0, 0.25, curve: Curves.easeOutBack));
-  late final _check = CurvedAnimation(parent: _c, curve: const Interval(0.18, 0.45, curve: Curves.easeOutCubic));
-  late final _fadeOut = CurvedAnimation(parent: _c, curve: const Interval(0.82, 1, curve: Curves.easeIn));
+  late final _appear = CurvedAnimation(
+    parent: _c,
+    curve: const Interval(0, 0.25, curve: Curves.easeOutBack),
+  );
+  late final _check = CurvedAnimation(
+    parent: _c,
+    curve: const Interval(0.18, 0.45, curve: Curves.easeOutCubic),
+  );
+  late final _fadeOut = CurvedAnimation(
+    parent: _c,
+    curve: const Interval(0.82, 1, curve: Curves.easeIn),
+  );
   final _pieces = _createConfetti();
 
   @override
@@ -162,12 +167,12 @@ class _CheckPainter extends CustomPainter {
 
 class _Piece {
   _Piece(math.Random r)
-      : angle = -math.pi / 2 + (r.nextDouble() - 0.5) * math.pi * 1.1,
-        speed = 0.55 + r.nextDouble() * 0.75,
-        spin = (r.nextDouble() - 0.5) * 14,
-        size = 6 + r.nextDouble() * 7,
-        isCircle = r.nextBool(),
-        color = _colors[r.nextInt(_colors.length)];
+    : angle = -math.pi / 2 + (r.nextDouble() - 0.5) * math.pi * 1.1,
+      speed = 0.55 + r.nextDouble() * 0.75,
+      spin = (r.nextDouble() - 0.5) * 14,
+      size = 6 + r.nextDouble() * 7,
+      isCircle = r.nextBool(),
+      color = _colors[r.nextInt(_colors.length)];
 
   static const _colors = [
     AppColors.emerald,

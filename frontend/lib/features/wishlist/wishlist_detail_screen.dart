@@ -527,7 +527,11 @@ class _SavingTile extends StatelessWidget {
         style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
       ),
       subtitle: Text(
-        [relativeDay(s.date), if (s.note != null && s.note!.isNotEmpty) s.note!].join(' • '),
+        [
+          relativeDay(s.date),
+          if (s.wallet != null) s.wallet!.name,
+          if (s.note != null && s.note!.isNotEmpty) s.note!,
+        ].join(' • '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

@@ -39,10 +39,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
           return FadeTransition(
             opacity: curved,
-            child: ScaleTransition(
-              scale: Tween(begin: 1.08, end: 1.0).animate(curved),
-              child: child,
-            ),
+            child: ScaleTransition(scale: Tween(begin: 1.08, end: 1.0).animate(curved), child: child),
           );
         },
       ),
@@ -86,13 +83,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       children: [
                         for (var i = 0; i < _name.length; i++)
                           Text(
-                            _name[i],
-                            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                _name[i],
+                                style: Theme.of(context).textTheme.displaySmall?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1,
                                 ),
-                          )
+                              )
                               .animate(delay: (1300 + i * 70).ms)
                               .fadeIn(duration: 300.ms)
                               .moveY(begin: 24, end: 0, curve: Curves.easeOutBack, duration: 500.ms),
@@ -100,11 +97,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Atur uangmu, wujudkan impianmu',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                    )
+                          'Atur uangmu, wujudkan impianmu',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.8)),
+                        )
                         .animate(delay: 1900.ms)
                         .fadeIn(duration: 500.ms)
                         .moveY(begin: 10, end: 0, curve: Curves.easeOut),
@@ -134,13 +131,13 @@ class _AnimatedLogo extends StatelessWidget {
         // Gelombang cincin yang memancar keluar
         for (var i = 0; i < 3; i++)
           Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 2),
-            ),
-          )
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 2),
+                ),
+              )
               .animate(delay: (600 + i * 500).ms, onPlay: (c) => c.repeat())
               .scaleXY(begin: 0.45, end: 1.25, duration: 1800.ms, curve: Curves.easeOut)
               .fadeOut(begin: 1, duration: 1800.ms),
@@ -186,13 +183,13 @@ class _Glow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
-      ),
-    )
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
+          ),
+        )
         .animate(onPlay: (c) => c.repeat(reverse: true))
         .scaleXY(begin: 0.85, end: 1.1, duration: 2400.ms, curve: Curves.easeInOut);
   }
@@ -208,14 +205,14 @@ class _LoadingDots extends StatelessWidget {
       children: [
         for (var i = 0; i < 3; i++)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              shape: BoxShape.circle,
-            ),
-          )
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  shape: BoxShape.circle,
+                ),
+              )
               .animate(delay: (i * 160).ms, onPlay: (c) => c.repeat(reverse: true))
               .moveY(begin: 0, end: -8, duration: 420.ms, curve: Curves.easeInOut)
               .fade(begin: 0.4, end: 1, duration: 420.ms),

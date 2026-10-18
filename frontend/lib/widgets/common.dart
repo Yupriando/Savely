@@ -70,13 +70,7 @@ class AnimatedRupiah extends StatelessWidget {
 
 /// Progress bar yang terisi dengan animasi.
 class AnimatedProgressBar extends StatelessWidget {
-  const AnimatedProgressBar({
-    super.key,
-    required this.value,
-    this.color,
-    this.height = 10,
-    this.background,
-  });
+  const AnimatedProgressBar({super.key, required this.value, this.color, this.height = 10, this.background});
 
   final double value;
   final Color? color;
@@ -125,21 +119,14 @@ class SectionTitle extends StatelessWidget {
         Expanded(
           child: Text(title, style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
         ),
-        if (action != null)
-          TextButton(onPressed: onAction, child: Text(action!)),
+        if (action != null) TextButton(onPressed: onAction, child: Text(action!)),
       ],
     );
   }
 }
 
 class EmptyState extends StatelessWidget {
-  const EmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.action,
-  });
+  const EmptyState({super.key, required this.icon, required this.title, this.subtitle, this.action});
 
   final IconData icon;
   final String title;
@@ -154,14 +141,11 @@ class EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              color: context.colors.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 44, color: context.colors.primary),
-          )
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(color: context.colors.primaryContainer, shape: BoxShape.circle),
+                child: Icon(icon, size: 44, color: context.colors.primary),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .moveY(begin: -4, end: 4, duration: 1800.ms, curve: Curves.easeInOut),
           const SizedBox(height: 20),
@@ -217,13 +201,13 @@ class SkeletonBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: height,
-      width: width,
-      decoration: BoxDecoration(
-        color: context.colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-    )
+          height: height,
+          width: width,
+          decoration: BoxDecoration(
+            color: context.colors.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        )
         .animate(onPlay: (c) => c.repeat())
         .shimmer(duration: 1200.ms, color: context.colors.surfaceContainerLowest.withValues(alpha: 0.6));
   }
@@ -461,10 +445,7 @@ void showSnack(BuildContext context, String message, {bool error = false}) {
     SnackBar(
       content: Row(
         children: [
-          Icon(
-            error ? Icons.error_outline_rounded : Icons.check_circle_rounded,
-            color: Colors.white,
-          ),
+          Icon(error ? Icons.error_outline_rounded : Icons.check_circle_rounded, color: Colors.white),
           const SizedBox(width: 12),
           Expanded(child: Text(message)),
         ],

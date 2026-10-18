@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/export.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
@@ -19,6 +22,10 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   int _filter = 0; // 0 semua, 1 masuk, 2 keluar
+  final _searchCtrl = TextEditingController();
+  final _scroll = ScrollController();
+  String _search = '';
+  Timer? _debounce;
 
   /// Id yang sudah di-swipe hapus, disembunyikan sampai data baru datang.
   final _removed = <String>{};
@@ -28,6 +35,34 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     2 => TxType.expense,
     _ => null,
   };
+
+  TxQuery get _query => (month: ref.read(selectedMonthProvider), type: _type, search: _search);
+
+  @override
+  void initState() {
+    super.initState();
+    // Hampir sampai bawah -> muat halaman berikutnya
+    _scroll.addListener(() {
+      if (_scroll.position.extentAfter < 400) {
+        ref.read(pagedTransactionsProvider(_query).notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() => _search = value.trim());
+    });
+  }
 
   Future<bool> _confirmDelete(Transaction t) async {
     final ok = await confirmDialog(
@@ -48,19 +83,30 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     final month = ref.watch(selectedMonthProvider);
-    final txs = ref.watch(transactionsProvider((month: month, type: _type)));
+    final query = (month: month, type: _type, search: _search);
+    final txs = ref.watch(pagedTransactionsProvider(query));
     final report = ref.watch(monthlyReportProvider(month)).valueOrNull;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Transaksi')),
+      appBar: AppBar(
+        title: const Text('Transaksi'),
+        actions: [
+          IconButton(
+            tooltip: 'Ekspor ke CSV / Excel',
+            onPressed: () => showExportDialog(context, ref, month: month),
+            icon: const Icon(Icons.file_download_outlined),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'fab-tx',
         onPressed: () => showTransactionForm(context),
         child: const Icon(Icons.add_rounded),
       ),
       body: RefreshIndicator(
-        onRefresh: () => refreshProviders(ref, [transactionsProvider, monthlyReportProvider]),
+        onRefresh: () => refreshProviders(ref, [pagedTransactionsProvider, monthlyReportProvider]),
         child: ListView(
+          controller: _scroll,
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
           children: [
             MonthSwitcher(month: month, onChanged: (m) => ref.read(selectedMonthProvider.notifier).state = m),
@@ -87,6 +133,27 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               ],
             ),
             const SizedBox(height: 14),
+            TextField(
+              controller: _searchCtrl,
+              onChanged: _onSearchChanged,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Cari catatan atau kategori…',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _searchCtrl.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Hapus pencarian',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          _debounce?.cancel();
+                          setState(() => _search = '');
+                        },
+                      ),
+              ),
+            ),
+            const SizedBox(height: 12),
             PillTabs(
               labels: const ['Semua', 'Masuk', 'Keluar'],
               index: _filter,
@@ -95,14 +162,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             const SizedBox(height: 18),
             AsyncView(
               value: txs,
-              onRetry: () => ref.invalidate(transactionsProvider),
-              builder: (all) {
-                final list = all.where((t) => !_removed.contains(t.id)).toList();
+              onRetry: () => ref.invalidate(pagedTransactionsProvider),
+              builder: (state) {
+                final list = state.items.where((t) => !_removed.contains(t.id)).toList();
                 if (list.isEmpty) {
                   return EmptyState(
-                    icon: Icons.inbox_rounded,
-                    title: 'Belum ada transaksi',
-                    subtitle: 'Transaksi di ${monthLabel(month)} akan muncul di sini.',
+                    icon: _search.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded,
+                    title: _search.isEmpty ? 'Belum ada transaksi' : 'Tidak ditemukan',
+                    subtitle: _search.isEmpty
+                        ? 'Transaksi di ${monthLabel(month)} akan muncul di sini.'
+                        : 'Tidak ada transaksi "$_search" di ${monthLabel(month)}.',
                   );
                 }
                 return Column(
@@ -114,15 +183,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         children: [
                           Icon(Icons.touch_app_rounded, size: 14, color: context.colors.onSurfaceVariant),
                           const SizedBox(width: 4),
-                          Text(
-                            'Ketuk untuk ubah, geser ke kiri untuk hapus',
-                            style: context.text.labelSmall?.copyWith(color: context.colors.onSurfaceVariant),
+                          Expanded(
+                            child: Text(
+                              '${state.total} transaksi · ketuk untuk ubah, geser ke kiri untuk hapus',
+                              style: context.text.labelSmall?.copyWith(
+                                color: context.colors.onSurfaceVariant,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     KeyedSubtree(
-                      key: ValueKey('${isoMonth(month)}-$_filter'),
+                      key: ValueKey('${isoMonth(month)}-$_filter-$_search'),
                       child: _GroupedList(
                         transactions: list,
                         onTap: (t) => showTransactionForm(context, existing: t),
@@ -134,6 +207,23 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         },
                       ),
                     ),
+                    if (state.hasMore)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: state.loadingMore
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                                )
+                              : TextButton(
+                                  onPressed: () =>
+                                      ref.read(pagedTransactionsProvider(query).notifier).loadMore(),
+                                  child: Text('Muat lagi (${state.total - state.items.length} lagi)'),
+                                ),
+                        ),
+                      ),
                   ],
                 );
               },

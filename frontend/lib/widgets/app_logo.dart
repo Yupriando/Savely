@@ -47,18 +47,12 @@ class GoldCoin extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: AppColors.goldGradient,
         border: Border.all(color: const Color(0xFFFDE68A), width: 2),
-        boxShadow: [
-          BoxShadow(color: AppColors.gold.withValues(alpha: 0.6), blurRadius: 12),
-        ],
+        boxShadow: [BoxShadow(color: AppColors.gold.withValues(alpha: 0.6), blurRadius: 12)],
       ),
       alignment: Alignment.center,
       child: Text(
         'Rp',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w900,
-          fontSize: size * 0.34,
-        ),
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: size * 0.34),
       ),
     );
   }

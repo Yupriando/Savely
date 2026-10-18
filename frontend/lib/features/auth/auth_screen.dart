@@ -171,8 +171,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           hintText: 'Nama kamu',
                           prefixIcon: Icon(Icons.person_rounded),
                         ),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
                       ).animate().fadeIn(duration: 300.ms),
                     )
                   : const SizedBox(width: double.infinity),
@@ -235,10 +234,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                       )
-                    : Text(
-                        _isRegister ? 'Daftar sekarang' : 'Masuk',
-                        key: ValueKey(_isRegister),
-                      ),
+                    : Text(_isRegister ? 'Daftar sekarang' : 'Masuk', key: ValueKey(_isRegister)),
               ),
             ),
           ],
@@ -257,13 +253,13 @@ class _Circle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: opacity),
-      ),
-    )
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: opacity),
+          ),
+        )
         .animate(onPlay: (c) => c.repeat(reverse: true))
         .moveY(begin: -6, end: 6, duration: 3.seconds, curve: Curves.easeInOut);
   }
