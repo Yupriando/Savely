@@ -1,0 +1,13 @@
+# Rahasia - JANGAN di-commit
+.env
+.env.*
+!.env.example
+
+# Dependensi & hasil build
+node_modules/
+backend/dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
