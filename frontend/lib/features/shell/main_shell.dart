@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/sound.dart';
 import '../../data/providers.dart';
+import '../../widgets/sync_banner.dart';
 import '../home/home_screen.dart';
 import '../reports/reports_screen.dart';
 import '../transactions/transactions_screen.dart';
@@ -21,29 +22,35 @@ class MainShell extends ConsumerWidget {
         index: index,
         children: const [HomeScreen(), TransactionsScreen(), WishlistScreen(), ReportsScreen()],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (i) {
-          if (i != index) SoundFx.play(Sfx.tap);
-          ref.read(shellTabProvider.notifier).state = i;
-        },
-        animationDuration: const Duration(milliseconds: 500),
-        destinations: [
-          for (final (icon, selected, label) in const [
-            (Icons.home_outlined, Icons.home_rounded, 'Beranda'),
-            (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Transaksi'),
-            (Icons.favorite_outline_rounded, Icons.favorite_rounded, 'Wishlist'),
-            (Icons.pie_chart_outline_rounded, Icons.pie_chart_rounded, 'Laporan'),
-          ])
-            NavigationDestination(
-              icon: Icon(icon),
-              // Ikon tab yang dipilih memantul & sedikit berputar
-              selectedIcon: Icon(selected)
-                  .animate()
-                  .scaleXY(begin: 0.6, end: 1, duration: 550.ms, curve: Curves.elasticOut)
-                  .rotate(begin: -0.08, end: 0, duration: 400.ms, curve: Curves.easeOutBack),
-              label: label,
-            ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SyncBanner(),
+          NavigationBar(
+            selectedIndex: index,
+            onDestinationSelected: (i) {
+              if (i != index) SoundFx.play(Sfx.tap);
+              ref.read(shellTabProvider.notifier).state = i;
+            },
+            animationDuration: const Duration(milliseconds: 500),
+            destinations: [
+              for (final (icon, selected, label) in const [
+                (Icons.home_outlined, Icons.home_rounded, 'Beranda'),
+                (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Transaksi'),
+                (Icons.favorite_outline_rounded, Icons.favorite_rounded, 'Wishlist'),
+                (Icons.pie_chart_outline_rounded, Icons.pie_chart_rounded, 'Laporan'),
+              ])
+                NavigationDestination(
+                  icon: Icon(icon),
+                  // Ikon tab yang dipilih memantul & sedikit berputar
+                  selectedIcon: Icon(selected)
+                      .animate()
+                      .scaleXY(begin: 0.6, end: 1, duration: 550.ms, curve: Curves.elasticOut)
+                      .rotate(begin: -0.08, end: 0, duration: 400.ms, curve: Curves.easeOutBack),
+                  label: label,
+                ),
+            ],
+          ),
         ],
       ),
     );

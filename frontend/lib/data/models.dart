@@ -101,6 +101,8 @@ class Transaction {
     this.walletId,
     this.wallet,
     this.billId,
+    this.pendingClientId,
+    this.syncError,
   });
 
   final String id;
@@ -114,6 +116,14 @@ class Transaction {
 
   /// Terisi kalau transaksi ini hasil "bayar tagihan rutin".
   final String? billId;
+
+  /// Terisi kalau transaksi masih di antrean offline (belum terkirim ke server).
+  final String? pendingClientId;
+
+  /// Alasan gagal dikirim (mis. kategori sudah dihapus), kalau ada.
+  final String? syncError;
+
+  bool get isPending => pendingClientId != null;
 
   factory Transaction.fromJson(Map<String, dynamic> json, {DateTime? date}) {
     final type = TxType.parse(json['type'] as String);

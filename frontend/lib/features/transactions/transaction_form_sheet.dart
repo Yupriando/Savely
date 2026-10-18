@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Ref;
 
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
+import '../../data/offline_queue.dart';
 import '../../data/providers.dart';
 import '../../widgets/category_icon.dart';
 import '../../widgets/celebration.dart';
@@ -75,43 +78,73 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     if (amount <= 0) return showSnack(context, 'Masukkan nominal dulu', error: true);
     if (_categoryId == null) return showSnack(context, 'Pilih kategori dulu', error: true);
 
+    // Transaksi baru & transaksi yang masih di antrean: simpan di HP dulu (langsung, tanpa
+    // menunggu internet), lalu dikirim ke server di belakang layar.
+    if (!_isEdit || widget.existing!.isPending) return _saveOffline(amount);
+
     setState(() => _saving = true);
-    final api = ref.read(apiProvider);
     try {
-      if (_isEdit) {
-        await api.updateTransaction(
-          widget.existing!.id,
-          type: _type,
-          categoryId: _categoryId!,
-          amount: amount,
-          date: _date,
-          note: _note.text,
-          walletId: _walletId,
-        );
-      } else {
-        await api.createTransaction(
-          type: _type,
-          categoryId: _categoryId!,
-          amount: amount,
-          date: _date,
-          note: _note.text,
-          walletId: _walletId,
-        );
-      }
+      await ref
+          .read(apiProvider)
+          .updateTransaction(
+            widget.existing!.id,
+            type: _type,
+            categoryId: _categoryId!,
+            amount: amount,
+            date: _date,
+            note: _note.text,
+            walletId: _walletId,
+          );
       refreshFinance(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSuccess(
-        context,
-        _isEdit ? 'Transaksi diperbarui' : '${_type.label} ${rupiah(amount)}\ndicatat',
-        // Uang masuk -> bunyi koin
-        sound: !_isEdit && _type.isIncome ? Sfx.coin : null,
-      );
+      showSuccess(context, 'Transaksi diperbarui');
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _saveOffline(int amount) async {
+    final category = ref.read(categoriesProvider).valueOrNull?.where((c) => c.id == _categoryId).firstOrNull;
+    if (category == null) return showSnack(context, 'Kategori belum dimuat, coba lagi', error: true);
+
+    final wallets = ref.read(walletsProvider).valueOrNull;
+    final wallet = wallets?.active.where((w) => w.id == _walletId).firstOrNull ?? wallets?.defaultWallet;
+
+    final tx = PendingTx(
+      clientId: widget.existing?.pendingClientId ?? newClientId(),
+      type: _type,
+      amount: amount,
+      date: _date,
+      category: category,
+      wallet: wallet == null
+          ? null
+          : Ref(id: wallet.id, name: wallet.name, icon: wallet.icon, color: wallet.color),
+      note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+    );
+
+    final sync = ref.read(syncProvider.notifier);
+    if (_isEdit) {
+      await sync.replace(tx);
+    } else {
+      await sync.add(tx);
+    }
+    if (!mounted) return;
+    final online = ref.read(apiProvider).online.value;
+    Navigator.pop(context);
+    showSuccess(
+      context,
+      _isEdit
+          ? 'Transaksi diperbarui'
+          : online
+          ? '${_type.label} ${rupiah(amount)}\ndicatat'
+          : '${_type.label} ${rupiah(amount)}\ndisimpan di HP, dikirim saat online',
+      // Uang masuk -> bunyi koin
+      sound: !_isEdit && _type.isIncome ? Sfx.coin : null,
+    );
+    unawaited(sync.syncNow(retryFailed: true));
   }
 
   Future<void> _delete() async {
@@ -121,6 +154,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       message: 'Transaksi ini akan dihapus permanen.',
     );
     if (!ok || !mounted) return;
+    // Belum terkirim: cukup dibuang dari antrean
+    if (widget.existing!.isPending) {
+      await ref.read(syncProvider.notifier).remove(widget.existing!.pendingClientId!);
+      if (!mounted) return;
+      Navigator.pop(context);
+      showSnack(context, 'Transaksi dihapus', sound: Sfx.delete);
+      return;
+    }
     try {
       await ref.read(apiProvider).deleteTransaction(widget.existing!.id);
       refreshFinance(ref);

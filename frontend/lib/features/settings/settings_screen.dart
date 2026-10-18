@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config.dart';
 import '../../core/export.dart';
 import '../../core/theme.dart';
+import '../../data/offline_queue.dart';
 import '../../data/providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/user_avatar.dart';
@@ -20,14 +21,19 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final pending = ref.read(syncProvider).pending.length;
     final ok = await confirmDialog(
       context,
       title: 'Keluar dari akun?',
-      message: 'Kamu perlu login lagi untuk melihat datamu.',
-      confirmLabel: 'Keluar',
+      message: pending > 0
+          ? 'Masih ada $pending transaksi yang belum terkirim ke server dan akan HILANG kalau kamu keluar '
+                'sekarang. Sambungkan internet dulu supaya terkirim.'
+          : 'Kamu perlu login lagi untuk melihat datamu.',
+      confirmLabel: pending > 0 ? 'Tetap keluar' : 'Keluar',
     );
     if (!ok || !context.mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
+    await ref.read(syncProvider.notifier).clear();
     await ref.read(authProvider.notifier).logout();
   }
 

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
+import '../../data/offline_queue.dart';
 import '../../data/providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/insight_card.dart';
@@ -33,6 +34,9 @@ class HomeScreen extends ConsumerWidget {
     final wallets = ref.watch(walletsProvider);
     final todayReport = ref.watch(dailyReportProvider(today));
     final recent = ref.watch(recentTransactionsProvider);
+    // Transaksi offline yang belum terkirim tampil paling atas
+    final pending = ref.watch(syncProvider).pending.map((p) => p.toTransaction()).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
     final wishlists = ref.watch(wishlistsProvider);
     final bills = ref.watch(billsProvider(month));
     final budgets = ref.watch(budgetsProvider(month));
@@ -186,7 +190,8 @@ class HomeScreen extends ConsumerWidget {
                         value: recent,
                         onRetry: () => ref.invalidate(recentTransactionsProvider),
                         loading: const SkeletonList(count: 4),
-                        builder: (list) {
+                        builder: (server) {
+                          final list = [...pending, ...server].take(5).toList();
                           if (list.isEmpty) {
                             return const EmptyState(
                               icon: Icons.receipt_long_rounded,
