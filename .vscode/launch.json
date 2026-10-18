@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Port tetap -> login tersimpan di browser antar-run (tidak perlu login ulang)
+      "name": "Savely (Chrome)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "frontend",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "args": ["--web-port", "5000"]
+    },
+    {
+      // Device yang sedang dipilih di status bar VS Code (Android, Windows, dll.)
+      "name": "Savely (device terpilih)",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "frontend",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Backend (npm run dev)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal"
+    }
+  ]
+}
