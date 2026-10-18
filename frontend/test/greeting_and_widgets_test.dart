@@ -57,7 +57,9 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: UserAvatar(user: AppUser(id: '1', email: 'yupri@mail.com', fullName: 'Yupriando')),
+          body: UserAvatar(
+            user: AppUser(id: '1', email: 'yupri@mail.com', fullName: 'Yupriando'),
+          ),
         ),
       ),
     );

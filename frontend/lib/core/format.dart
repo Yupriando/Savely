@@ -12,8 +12,7 @@ String rupiah(num value) => _rupiah.format(value);
 String rupiahCompact(num value) => _rupiahCompact.format(value);
 
 /// Dengan tanda + / - untuk pemasukan / pengeluaran.
-String signedRupiah(num value, {required bool isIncome}) =>
-    '${isIncome ? '+' : '-'}${rupiah(value.abs())}';
+String signedRupiah(num value, {required bool isIncome}) => '${isIncome ? '+' : '-'}${rupiah(value.abs())}';
 
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 DateTime monthOnly(DateTime d) => DateTime(d.year, d.month);
@@ -57,7 +56,10 @@ class ThousandsInputFormatter extends TextInputFormatter {
     if (digits.isEmpty) return const TextEditingValue();
     if (digits.length > 13) digits = digits.substring(0, 13);
     final text = _thousands.format(int.parse(digits));
-    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
   }
 }
 

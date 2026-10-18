@@ -18,12 +18,7 @@ class MainShell extends ConsumerWidget {
     return Scaffold(
       body: _FadeIndexedStack(
         index: index,
-        children: const [
-          HomeScreen(),
-          TransactionsScreen(),
-          WishlistScreen(),
-          ReportsScreen(),
-        ],
+        children: const [HomeScreen(), TransactionsScreen(), WishlistScreen(), ReportsScreen()],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,

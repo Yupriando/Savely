@@ -10,6 +10,7 @@ import '../../data/providers.dart';
 import '../../widgets/category_icon.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
+import '../../widgets/pickers.dart';
 
 /// Buka form tambah transaksi, atau ubah kalau [existing] diisi.
 Future<void> showTransactionForm(BuildContext context, {Transaction? existing}) {
@@ -34,6 +35,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   late TxType _type = widget.existing?.type ?? TxType.expense;
   late String? _categoryId = widget.existing?.category.id;
   late DateTime _date = widget.existing?.date ?? dateOnly(DateTime.now());
+  late String? _walletId = widget.existing?.walletId;
   late final _amount = TextEditingController(
     text: widget.existing != null ? formatThousands(widget.existing!.amount) : '',
   );
@@ -76,11 +78,24 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     final api = ref.read(apiProvider);
     try {
       if (_isEdit) {
-        await api.updateTransaction(widget.existing!.id,
-            type: _type, categoryId: _categoryId!, amount: amount, date: _date, note: _note.text);
+        await api.updateTransaction(
+          widget.existing!.id,
+          type: _type,
+          categoryId: _categoryId!,
+          amount: amount,
+          date: _date,
+          note: _note.text,
+          walletId: _walletId,
+        );
       } else {
         await api.createTransaction(
-            type: _type, categoryId: _categoryId!, amount: amount, date: _date, note: _note.text);
+          type: _type,
+          categoryId: _categoryId!,
+          amount: amount,
+          date: _date,
+          note: _note.text,
+          walletId: _walletId,
+        );
       }
       refreshFinance(ref);
       if (!mounted) return;
@@ -242,6 +257,13 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   ),
                 );
               },
+            ),
+            const SizedBox(height: 20),
+
+            WalletPicker(
+              label: _type.isIncome ? 'Masuk ke dompet' : 'Bayar dari dompet',
+              selectedId: _walletId,
+              onChanged: (id) => setState(() => _walletId = id),
             ),
             const SizedBox(height: 20),
 

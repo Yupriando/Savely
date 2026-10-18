@@ -8,6 +8,7 @@ import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
+import '../../widgets/pickers.dart';
 
 // =============================================================
 // Form tambah / ubah wishlist
@@ -288,6 +289,7 @@ class _SavingSheet extends ConsumerStatefulWidget {
 class _SavingSheetState extends ConsumerState<_SavingSheet> {
   late bool _deposit = widget.deposit;
   late DateTime _date = widget.existing?.date ?? dateOnly(DateTime.now());
+  late String? _walletId = widget.existing?.walletId;
   late final _amount = TextEditingController(
     text: widget.existing != null ? formatThousands(widget.existing!.amount.abs()) : '',
   );
@@ -329,9 +331,16 @@ class _SavingSheetState extends ConsumerState<_SavingSheet> {
     try {
       final api = ref.read(apiProvider);
       if (_isEdit) {
-        await api.updateSaving(w.id, widget.existing!.id, amount: signed, date: _date, note: _note.text);
+        await api.updateSaving(
+          w.id,
+          widget.existing!.id,
+          amount: signed,
+          date: _date,
+          note: _note.text,
+          walletId: _walletId,
+        );
       } else {
-        await api.addSaving(w.id, amount: signed, date: _date, note: _note.text);
+        await api.addSaving(w.id, amount: signed, date: _date, note: _note.text, walletId: _walletId);
       }
       refreshWishlists(ref);
       if (!mounted) return;
@@ -483,6 +492,12 @@ class _SavingSheetState extends ConsumerState<_SavingSheet> {
                 ],
               ),
             ],
+            const SizedBox(height: 16),
+            WalletPicker(
+              label: _deposit ? 'Ambil dari dompet' : 'Kembalikan ke dompet',
+              selectedId: _walletId,
+              onChanged: (id) => setState(() => _walletId = id),
+            ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,

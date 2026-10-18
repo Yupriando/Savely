@@ -19,6 +19,7 @@ class TransactionTile extends StatelessWidget {
     final color = t.type.isIncome ? AppColors.income : AppColors.expense;
     final subtitle = [
       if (showDate) relativeDay(t.date),
+      if (t.wallet != null) t.wallet!.name,
       if (t.note != null && t.note!.isNotEmpty) t.note!,
     ].join(' • ');
 

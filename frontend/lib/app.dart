@@ -50,9 +50,8 @@ class AuthGate extends ConsumerWidget {
 
     final Widget child = auth.when(
       skipLoadingOnReload: true,
-      data: (user) => user == null
-          ? const AuthScreen(key: ValueKey('auth'))
-          : const MainShell(key: ValueKey('shell')),
+      data: (user) =>
+          user == null ? const AuthScreen(key: ValueKey('auth')) : const MainShell(key: ValueKey('shell')),
       loading: () => const Scaffold(
         key: ValueKey('loading'),
         body: Center(child: CircularProgressIndicator()),
@@ -71,10 +70,7 @@ class AuthGate extends ConsumerWidget {
       switchOutCurve: Curves.easeInCubic,
       transitionBuilder: (child, anim) => FadeTransition(
         opacity: anim,
-        child: ScaleTransition(
-          scale: Tween(begin: 0.96, end: 1.0).animate(anim),
-          child: child,
-        ),
+        child: ScaleTransition(scale: Tween(begin: 0.96, end: 1.0).animate(anim), child: child),
       ),
       child: child,
     );

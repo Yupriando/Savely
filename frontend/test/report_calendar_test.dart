@@ -47,9 +47,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          monthlyReportProvider.overrideWith((ref, m) async => _fakeReport(m)),
-        ],
+        overrides: [monthlyReportProvider.overrideWith((ref, m) async => _fakeReport(m))],
         child: MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(

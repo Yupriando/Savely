@@ -9,6 +9,9 @@ import 'models.dart';
 /// Di-override di main() setelah SharedPreferences siap.
 final sharedPrefsProvider = Provider<SharedPreferences>((_) => throw UnimplementedError());
 
+/// Di-override di main() setelah sesi login dimuat dari penyimpanan aman.
+final tokenStoreProvider = Provider<TokenStore>((_) => throw UnimplementedError());
+
 // ---------------- Tema ----------------
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
@@ -32,7 +35,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
 final apiProvider = Provider<ApiClient>((ref) {
   return ApiClient(
-    TokenStore(ref.read(sharedPrefsProvider)),
+    ref.read(tokenStoreProvider),
     onSessionExpired: () => ref.read(authProvider.notifier).sessionExpired(),
   );
 });
@@ -118,13 +121,71 @@ final categoriesProvider = FutureProvider.autoDispose<List<Category>>(
 /// Bulan yang sedang dilihat di tab Transaksi.
 final selectedMonthProvider = StateProvider<DateTime>((_) => monthOnly(DateTime.now()));
 
-typedef TxQuery = ({DateTime month, TxType? type});
+/// 5 transaksi terbaru (semua bulan) untuk Beranda.
+final recentTransactionsProvider = FutureProvider.autoDispose<List<Transaction>>(
+  (ref) async => (await ref.watch(apiProvider).transactions(limit: 5)).items,
+);
 
-final transactionsProvider = FutureProvider.autoDispose.family<List<Transaction>, TxQuery>((ref, q) {
-  final start = DateTime(q.month.year, q.month.month);
-  final end = DateTime(q.month.year, q.month.month + 1, 0);
-  return ref.watch(apiProvider).transactions(start: start, end: end, type: q.type);
-});
+typedef TxQuery = ({DateTime month, TxType? type, String search});
+
+class TxListState {
+  const TxListState({required this.items, required this.total, this.loadingMore = false});
+
+  final List<Transaction> items;
+  final int total;
+  final bool loadingMore;
+
+  bool get hasMore => items.length < total;
+
+  TxListState copyWith({List<Transaction>? items, int? total, bool? loadingMore}) => TxListState(
+    items: items ?? this.items,
+    total: total ?? this.total,
+    loadingMore: loadingMore ?? this.loadingMore,
+  );
+}
+
+/// Daftar transaksi per bulan, dimuat bertahap (30 per halaman) saat di-scroll.
+final pagedTransactionsProvider = AsyncNotifierProvider.autoDispose
+    .family<PagedTransactions, TxListState, TxQuery>(PagedTransactions.new);
+
+class PagedTransactions extends AutoDisposeFamilyAsyncNotifier<TxListState, TxQuery> {
+  static const _pageSize = 30;
+  int _page = 1;
+
+  Future<TxPage> _fetch(int page) {
+    final q = arg;
+    return ref
+        .read(apiProvider)
+        .transactions(
+          start: DateTime(q.month.year, q.month.month),
+          end: DateTime(q.month.year, q.month.month + 1, 0),
+          type: q.type,
+          search: q.search,
+          page: page,
+          limit: _pageSize,
+        );
+  }
+
+  @override
+  Future<TxListState> build(TxQuery arg) async {
+    _page = 1;
+    final page = await _fetch(1);
+    return TxListState(items: page.items, total: page.total);
+  }
+
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || !current.hasMore || current.loadingMore) return;
+    state = AsyncData(current.copyWith(loadingMore: true));
+    try {
+      final next = await _fetch(_page + 1);
+      _page++;
+      state = AsyncData(current.copyWith(items: [...current.items, ...next.items], total: next.total));
+    } catch (_) {
+      state = AsyncData(current.copyWith(loadingMore: false));
+    }
+  }
+}
 
 final monthlyReportProvider = FutureProvider.autoDispose.family<MonthlyReport, DateTime>(
   (ref, month) => ref.watch(apiProvider).monthlyReport(month),
@@ -138,6 +199,30 @@ final trendProvider = FutureProvider.autoDispose<List<MonthlyTotal>>(
   (ref) => ref.watch(apiProvider).trend(months: 6),
 );
 
+final insightsProvider = FutureProvider.autoDispose.family<List<Insight>, DateTime>(
+  (ref, month) => ref.watch(apiProvider).insights(month),
+);
+
+final walletsProvider = FutureProvider.autoDispose<WalletsData>((ref) => ref.watch(apiProvider).wallets());
+
+final allWalletsProvider = FutureProvider.autoDispose<WalletsData>(
+  (ref) => ref.watch(apiProvider).wallets(includeArchived: true),
+);
+
+final transfersProvider = FutureProvider.autoDispose.family<List<Transfer>, DateTime>((ref, month) {
+  return ref
+      .watch(apiProvider)
+      .transfers(start: DateTime(month.year, month.month), end: DateTime(month.year, month.month + 1, 0));
+});
+
+final budgetsProvider = FutureProvider.autoDispose.family<BudgetReport, DateTime>(
+  (ref, month) => ref.watch(apiProvider).budgets(month),
+);
+
+final billsProvider = FutureProvider.autoDispose.family<BillsReport, DateTime>(
+  (ref, month) => ref.watch(apiProvider).bills(month),
+);
+
 final wishlistsProvider = FutureProvider.autoDispose<List<Wishlist>>(
   (ref) => ref.watch(apiProvider).wishlists(),
 );
@@ -148,13 +233,27 @@ final wishlistDetailProvider = FutureProvider.autoDispose.family<Wishlist, Strin
 
 /// Panggil setelah menambah/mengubah/menghapus data supaya semua layar ikut ter-update.
 void refreshFinance(WidgetRef ref) {
-  ref.invalidate(transactionsProvider);
+  ref.invalidate(recentTransactionsProvider);
+  ref.invalidate(pagedTransactionsProvider);
   ref.invalidate(monthlyReportProvider);
   ref.invalidate(dailyReportProvider);
   ref.invalidate(trendProvider);
+  ref.invalidate(insightsProvider);
+  ref.invalidate(walletsProvider);
+  ref.invalidate(allWalletsProvider);
+  ref.invalidate(transfersProvider);
+  ref.invalidate(budgetsProvider);
+  ref.invalidate(billsProvider);
 }
 
+/// Tabungan wishlist juga mengubah saldo dompet & ringkasan "ditabung".
 void refreshWishlists(WidgetRef ref) {
   ref.invalidate(wishlistsProvider);
   ref.invalidate(wishlistDetailProvider);
+  refreshFinance(ref);
+}
+
+void refreshCategories(WidgetRef ref) {
+  ref.invalidate(categoriesProvider);
+  refreshFinance(ref);
 }

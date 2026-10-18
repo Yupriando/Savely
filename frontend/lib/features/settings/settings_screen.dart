@@ -3,10 +3,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config.dart';
+import '../../core/export.dart';
 import '../../core/theme.dart';
 import '../../data/providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/user_avatar.dart';
+import '../bills/bills_screen.dart';
+import '../budgets/budgets_screen.dart';
+import '../categories/categories_screen.dart';
+import '../wallets/wallets_screen.dart';
 import 'edit_profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -72,6 +77,51 @@ class SettingsScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const SectionTitle('Keuangan'),
+                  const SizedBox(height: 10),
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        _MenuTile(
+                          icon: Icons.account_balance_wallet_rounded,
+                          color: AppColors.emerald,
+                          title: 'Dompet',
+                          subtitle: 'Tunai, bank, e-wallet & transfer',
+                          onTap: () => openWallets(context),
+                        ),
+                        _MenuTile(
+                          icon: Icons.track_changes_rounded,
+                          color: AppColors.gold,
+                          title: 'Anggaran',
+                          subtitle: 'Batas pengeluaran per kategori',
+                          onTap: () => openBudgets(context),
+                        ),
+                        _MenuTile(
+                          icon: Icons.event_repeat_rounded,
+                          color: const Color(0xFFEC407A),
+                          title: 'Tagihan rutin',
+                          subtitle: 'IPL, listrik, kiriman orang tua…',
+                          onTap: () => openBills(context),
+                        ),
+                        _MenuTile(
+                          icon: Icons.category_rounded,
+                          color: const Color(0xFF7E57C2),
+                          title: 'Kelola kategori',
+                          subtitle: 'Tambah, ubah nama, ikon & warna',
+                          onTap: () => openCategories(context),
+                        ),
+                        _MenuTile(
+                          icon: Icons.file_download_rounded,
+                          color: const Color(0xFF0EA5E9),
+                          title: 'Ekspor ke CSV / Excel',
+                          subtitle: 'Unduh transaksi dalam rentang tanggal',
+                          onTap: () => showExportDialog(context, ref),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -177,6 +227,41 @@ class _ThemeOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MenuTile extends StatelessWidget {
+  const _MenuTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: color, size: 22),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right_rounded),
     );
   }
 }

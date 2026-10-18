@@ -50,10 +50,7 @@ class _ReportCalendarState extends ConsumerState<ReportCalendar> {
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
         child: Column(
           children: [
-            MonthSwitcher(
-              month: _month,
-              onChanged: _goToMonth,
-            ),
+            MonthSwitcher(month: _month, onChanged: _goToMonth),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -199,20 +196,24 @@ class _DayCell extends StatelessWidget {
     final background = isSelected
         ? context.colors.primary
         : expense > 0
-            ? AppColors.expense.withValues(alpha: 0.06 + heat * 0.22)
-            : income > 0
-                ? AppColors.income.withValues(alpha: 0.08)
-                : context.colors.surfaceContainer.withValues(alpha: isFuture ? 0.4 : 1);
+        ? AppColors.expense.withValues(alpha: 0.06 + heat * 0.22)
+        : income > 0
+        ? AppColors.income.withValues(alpha: 0.08)
+        : context.colors.surfaceContainer.withValues(alpha: isFuture ? 0.4 : 1);
 
     final dayColor = isSelected
         ? Colors.white
         : isFuture
-            ? context.colors.onSurfaceVariant.withValues(alpha: 0.4)
-            : date.weekday == DateTime.sunday
-                ? AppColors.expense
-                : context.colors.onSurface;
+        ? context.colors.onSurfaceVariant.withValues(alpha: 0.4)
+        : date.weekday == DateTime.sunday
+        ? AppColors.expense
+        : context.colors.onSurface;
 
-    final amountStyle = context.text.labelSmall?.copyWith(fontSize: 9, fontWeight: FontWeight.w700, height: 1.15);
+    final amountStyle = context.text.labelSmall?.copyWith(
+      fontSize: 9,
+      fontWeight: FontWeight.w700,
+      height: 1.15,
+    );
 
     return Pressable(
       onTap: isFuture ? null : onTap,
@@ -276,7 +277,10 @@ class _LegendDot extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(3)),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(3),
+          ),
         ),
         const SizedBox(width: 6),
         Text(label, style: context.text.labelSmall?.copyWith(color: context.colors.onSurfaceVariant)),
