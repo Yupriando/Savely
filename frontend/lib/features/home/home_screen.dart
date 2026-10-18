@@ -17,6 +17,7 @@ import '../settings/settings_screen.dart';
 import '../transactions/transaction_form_sheet.dart';
 import '../wallets/wallets_screen.dart';
 import '../wishlist/wishlist_detail_screen.dart';
+import '../../widgets/stagger.dart';
 
 final _hideBalanceProvider = StateProvider<bool>((_) => false);
 
@@ -207,7 +208,7 @@ class HomeScreen extends ConsumerWidget {
                                               onTap: () => showTransactionForm(context, existing: t),
                                             ),
                                         ]
-                                        .animate(interval: 60.ms)
+                                        .staggered(interval: 60.ms)
                                         .fadeIn(duration: 300.ms)
                                         .moveX(begin: 16, end: 0, curve: Curves.easeOutCubic),
                               ),
@@ -216,7 +217,7 @@ class HomeScreen extends ConsumerWidget {
                         },
                       ),
                     ]
-                    .animate(interval: 50.ms)
+                    .staggered(interval: 50.ms)
                     .fadeIn(duration: 450.ms)
                     .moveY(begin: 18, end: 0, curve: Curves.easeOutCubic),
           ),
@@ -485,14 +486,28 @@ class _BalanceCard extends ConsumerWidget {
                     Icon(Icons.calendar_month_rounded, size: 14, color: white.withValues(alpha: 0.8)),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
-                        hidden
-                            ? monthLabel(month)
-                            : '${monthLabel(month)} · sisa ${rupiah(summary.balance)}'
-                                  '${summary.saved != 0 ? ' · ditabung ${rupiah(summary.saved)}' : ''}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.labelMedium?.copyWith(color: white.withValues(alpha: 0.85)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            hidden
+                                ? 'Sisa ${monthLabel(month)}'
+                                : 'Sisa ${monthLabel(month)}: ${rupiah(summary.balance)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.labelMedium?.copyWith(
+                              color: white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (!hidden && summary.saved != 0)
+                            Text(
+                              'Ditabung ke wishlist: ${rupiah(summary.saved)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.labelSmall?.copyWith(color: white.withValues(alpha: 0.8)),
+                            ),
+                        ],
                       ),
                     ),
                     Icon(Icons.chevron_right_rounded, size: 18, color: white.withValues(alpha: 0.8)),
@@ -561,7 +576,7 @@ class _FlowPill extends StatelessWidget {
                     ? Text('• • • •', style: context.text.titleSmall?.copyWith(color: Colors.white))
                     : AnimatedRupiah(
                         amount,
-                        compact: amount >= 10000000,
+                        scaleDown: true,
                         style: context.text.titleSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -645,7 +660,7 @@ class _MiniStat extends StatelessWidget {
                       ? const SkeletonBox(height: 14, width: 70)
                       : AnimatedRupiah(
                           value!,
-                          compact: value! >= 10000000,
+                          scaleDown: true,
                           style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w800),
                         ),
                 ],

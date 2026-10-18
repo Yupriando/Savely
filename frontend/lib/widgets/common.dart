@@ -45,12 +45,22 @@ class _PressableState extends State<Pressable> {
 
 /// Angka Rupiah yang "menghitung" naik saat muncul / berubah.
 class AnimatedRupiah extends StatelessWidget {
-  const AnimatedRupiah(this.value, {super.key, this.style, this.compact = false, this.prefix = ''});
+  const AnimatedRupiah(
+    this.value, {
+    super.key,
+    this.style,
+    this.compact = false,
+    this.prefix = '',
+    this.scaleDown = false,
+  });
 
   final int value;
   final TextStyle? style;
   final bool compact;
   final String prefix;
+
+  /// true = kecilkan huruf kalau tidak muat (bukan dipotong "…").
+  final bool scaleDown;
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +68,17 @@ class AnimatedRupiah extends StatelessWidget {
       tween: Tween(end: value.toDouble()),
       duration: const Duration(milliseconds: 900),
       curve: Curves.easeOutCubic,
-      builder: (_, v, _) => Text(
-        '$prefix${compact ? rupiahCompact(v.round()) : rupiah(v.round())}',
-        style: style,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      builder: (_, v, _) {
+        final text = Text(
+          '$prefix${compact ? rupiahCompact(v.round()) : rupiah(v.round())}',
+          style: style,
+          maxLines: 1,
+          overflow: scaleDown ? TextOverflow.visible : TextOverflow.ellipsis,
+        );
+        return scaleDown
+            ? FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: text)
+            : text;
+      },
     );
   }
 }

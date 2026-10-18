@@ -13,6 +13,7 @@ import '../budgets/budgets_screen.dart';
 import '../categories/categories_screen.dart';
 import '../wallets/wallets_screen.dart';
 import 'edit_profile_screen.dart';
+import '../../widgets/stagger.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -178,7 +179,7 @@ class SettingsScreen extends ConsumerWidget {
                     label: const Text('Keluar'),
                   ),
                 ]
-                .animate(interval: 60.ms)
+                .staggered(interval: 60.ms)
                 .fadeIn(duration: 350.ms)
                 .moveY(begin: 14, end: 0, curve: Curves.easeOutCubic),
       ),

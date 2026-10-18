@@ -9,6 +9,7 @@ import '../../widgets/category_icon.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
+import '../../widgets/stagger.dart';
 
 void openCategories(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CategoriesScreen()));
@@ -63,7 +64,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                         title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                         trailing: const Icon(Icons.chevron_right_rounded),
                       ),
-                  ].animate(interval: 30.ms).fadeIn(duration: 250.ms).moveX(begin: 12, end: 0),
+                  ].staggered(interval: 30.ms).fadeIn(duration: 250.ms).moveX(begin: 12, end: 0),
                 ),
               );
             },

@@ -10,6 +10,7 @@ import '../../widgets/category_icon.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
+import '../../widgets/stagger.dart';
 
 void openBudgets(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const BudgetsScreen()));
@@ -83,7 +84,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           onTap: () => showBudgetForm(context, existing: b),
                         ),
                       ),
-                  ].animate(interval: 60.ms).fadeIn(duration: 350.ms).moveY(begin: 14, end: 0),
+                  ].staggered(interval: 60.ms).fadeIn(duration: 350.ms).moveY(begin: 14, end: 0),
                 );
               },
             ),

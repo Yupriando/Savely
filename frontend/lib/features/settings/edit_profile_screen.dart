@@ -8,6 +8,7 @@ import '../../data/providers.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/user_avatar.dart';
+import '../../widgets/stagger.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -65,7 +66,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   color: AppColors.expense,
                   onTap: () => Navigator.pop(ctx, 'remove'),
                 ),
-            ].animate(interval: 50.ms).fadeIn(duration: 250.ms).moveY(begin: 12, end: 0),
+            ].staggered(interval: 50.ms).fadeIn(duration: 250.ms).moveY(begin: 12, end: 0),
           ),
         ),
       ),
@@ -345,7 +346,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                   ]
-                  .animate(interval: 50.ms)
+                  .staggered(interval: 50.ms)
                   .fadeIn(duration: 350.ms)
                   .moveY(begin: 14, end: 0, curve: Curves.easeOutCubic),
         ),

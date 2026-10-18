@@ -11,6 +11,7 @@ import '../../data/providers.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import 'wishlist_sheets.dart';
+import '../../widgets/stagger.dart';
 
 void openWishlistDetail(BuildContext context, Wishlist wishlist) {
   Navigator.of(
@@ -241,7 +242,7 @@ class WishlistDetailScreen extends ConsumerWidget {
                       onTap: (saving) => showSavingSheet(context, w, existing: saving),
                     ),
                 ]
-                .animate(interval: 50.ms)
+                .staggered(interval: 50.ms)
                 .fadeIn(duration: 400.ms)
                 .moveY(begin: 14, end: 0, curve: Curves.easeOutCubic),
       ),
@@ -497,7 +498,7 @@ class _SavingsListState extends State<_SavingsList> {
               ),
               child: _SavingTile(saving: s, onTap: () => widget.onTap(s)),
             ),
-        ].animate(interval: 50.ms).fadeIn(duration: 300.ms).moveX(begin: 16, end: 0),
+        ].staggered(interval: 50.ms).fadeIn(duration: 300.ms).moveX(begin: 16, end: 0),
       ),
     );
   }

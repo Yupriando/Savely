@@ -13,6 +13,7 @@ import '../../widgets/transaction_tile.dart';
 import '../../widgets/insight_card.dart';
 import '../transactions/transaction_form_sheet.dart';
 import 'report_calendar.dart';
+import '../../widgets/stagger.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -126,7 +127,7 @@ class _MonthlyView extends ConsumerWidget {
                       const SizedBox(height: 16),
                       _CategoryBreakdown(title: 'Pemasukan per kategori', items: r.incomeByCategory),
                     ]
-                    .animate(interval: 80.ms)
+                    .staggered(interval: 80.ms)
                     .fadeIn(duration: 400.ms)
                     .moveY(begin: 16, end: 0, curve: Curves.easeOutCubic),
           ),
@@ -218,7 +219,7 @@ class _DailyView extends ConsumerWidget {
                               ),
                       ),
                     ]
-                    .animate(interval: 80.ms)
+                    .staggered(interval: 80.ms)
                     .fadeIn(duration: 400.ms)
                     .moveY(begin: 16, end: 0, curve: Curves.easeOutCubic),
           ),
@@ -360,7 +361,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 10),
             AnimatedRupiah(
               value,
-              compact: value >= 100000000,
+              scaleDown: true,
               style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
           ],
