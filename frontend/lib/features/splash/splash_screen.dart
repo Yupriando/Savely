@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -18,10 +20,23 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen> {
   static const _name = 'Savely';
 
+  /// true kalau cek login > 6 detik (biasanya server gratis sedang "bangun").
+  bool _slow = false;
+  Timer? _slowTimer;
+
   @override
   void initState() {
     super.initState();
+    _slowTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted) setState(() => _slow = true);
+    });
     _start();
+  }
+
+  @override
+  void dispose() {
+    _slowTimer?.cancel();
+    super.dispose();
   }
 
   /// Tunggu animasi selesai DAN cek login selesai, baru pindah halaman.
@@ -112,7 +127,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 left: 0,
                 right: 0,
                 bottom: 56,
-                child: const _LoadingDots().animate(delay: 2100.ms).fadeIn(duration: 400.ms),
+                child: Column(
+                  children: [
+                    const _LoadingDots().animate(delay: 2100.ms).fadeIn(duration: 400.ms),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      child: _slow
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: Text(
+                                'Menyiapkan server, tunggu sebentar…',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.75)),
+                              ).animate().fadeIn(duration: 500.ms),
+                            )
+                          : const SizedBox(width: double.infinity),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

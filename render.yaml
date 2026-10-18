@@ -1,0 +1,26 @@
+# Konfigurasi deploy backend Savely di Render (https://render.com)
+# Render > New > Blueprint > pilih repository ini. Isi SUPABASE_URL & SUPABASE_ANON_KEY saat diminta.
+services:
+  - type: web
+    name: savely-api
+    runtime: node
+    plan: free
+    region: singapore # paling dekat ke Indonesia
+    rootDir: backend
+    # --include=dev: TypeScript (devDependency) dibutuhkan saat build
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true # deploy ulang otomatis setiap git push ke main
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: APP_TIMEZONE
+        value: Asia/Jakarta
+      - key: CORS_ORIGIN
+        value: "*"
+      # Rahasia: tidak ditulis di sini, diisi di dashboard Render
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false

@@ -20,15 +20,26 @@ class ApiException implements Exception {
 
 /// Semua komunikasi ke backend Savely.
 class ApiClient {
-  ApiClient(this.tokens, {required this.onSessionExpired})
+  // Server gratis (mis. Render) "tidur" saat lama tidak dipakai dan butuh ~30–60 detik untuk bangun.
+  // Request ditahan selama server bangun, jadi batas tunggu jawabannya dibuat longgar.
+  static const _connectTimeout = Duration(seconds: 20);
+  static const _receiveTimeout = Duration(seconds: 75);
+  static const _maxTransientRetries = 2;
+
+  /// [adapter] hanya untuk test (server palsu).
+  ApiClient(this.tokens, {required this.onSessionExpired, HttpClientAdapter? adapter})
     : _dio = Dio(
         BaseOptions(
           baseUrl: AppConfig.apiUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 20),
+          connectTimeout: _connectTimeout,
+          receiveTimeout: _receiveTimeout,
           contentType: Headers.jsonContentType,
         ),
       ) {
+    if (adapter != null) {
+      _dio.httpClientAdapter = adapter;
+      _plainDio.httpClientAdapter = adapter;
+    }
     _dio.interceptors.add(
       QueuedInterceptorsWrapper(onRequest: _attachToken, onError: _refreshOnUnauthorized),
     );
@@ -51,17 +62,40 @@ class ApiClient {
   /// Dio polos (tanpa interceptor) untuk refresh token & mengulang request,
   /// supaya tidak macet menunggu antrean interceptor yang sedang berjalan.
   late final _plainDio = Dio(
-    BaseOptions(
-      baseUrl: AppConfig.apiUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 20),
-    ),
+    BaseOptions(baseUrl: AppConfig.apiUrl, connectTimeout: _connectTimeout, receiveTimeout: _receiveTimeout),
   );
 
-  /// Access token kedaluwarsa (401) -> perbarui pakai refresh token, lalu ulangi request.
-  /// Hanya logout kalau refresh token benar-benar ditolak server, bukan karena gangguan jaringan.
+  /// Gangguan sementara: jaringan putus, server sedang bangun / deploy ulang.
+  static bool _isTransient(DioException e) {
+    final status = e.response?.statusCode;
+    return e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        status == 502 ||
+        status == 503 ||
+        status == 504;
+  }
+
+  /// Penanganan error:
+  /// 1. Gangguan sementara pada request GET -> coba lagi (maks. 2x, jeda 2 lalu 4 detik).
+  ///    POST/PATCH/DELETE tidak diulang supaya data tidak tercatat dobel.
+  /// 2. Access token kedaluwarsa (401) -> perbarui pakai refresh token, lalu ulangi request.
+  ///    Hanya logout kalau refresh token benar-benar ditolak server, bukan karena gangguan jaringan.
   Future<void> _refreshOnUnauthorized(DioException err, ErrorInterceptorHandler handler) async {
     final options = err.requestOptions;
+
+    final attempt = (options.extra['transientRetry'] as int?) ?? 0;
+    if (options.method == 'GET' && _isTransient(err) && attempt < _maxTransientRetries) {
+      await Future<void>.delayed(Duration(seconds: 2 * (attempt + 1)));
+      options.extra['transientRetry'] = attempt + 1;
+      try {
+        return handler.resolve(await _plainDio.fetch(options));
+      } on DioException catch (e) {
+        // Masih gagal: coba lagi lewat handler ini (tanpa antre ulang)
+        return _refreshOnUnauthorized(e, handler);
+      }
+    }
+
     final refreshToken = tokens.refreshToken;
     final canRefresh =
         err.response?.statusCode == 401 &&
@@ -118,10 +152,12 @@ class ApiClient {
     switch (e.type) {
       case DioExceptionType.connectionError:
       case DioExceptionType.connectionTimeout:
-        return const ApiException('Tidak bisa terhubung ke server. Pastikan backend sudah jalan.');
+        return const ApiException(
+          'Tidak bisa terhubung ke server. Cek internet kamu, atau coba lagi sebentar lagi.',
+        );
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return const ApiException('Server terlalu lama merespons. Coba lagi.');
+        return const ApiException('Server sedang bangun atau sibuk. Tunggu sebentar lalu coba lagi.');
       default:
         return ApiException(
           'Terjadi kesalahan (${e.response?.statusCode ?? 'jaringan'})',
