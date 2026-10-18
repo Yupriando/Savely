@@ -12,6 +12,7 @@ import '../../data/providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/transaction_tile.dart';
 import 'transaction_form_sheet.dart';
+import '../../widgets/stagger.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
@@ -295,7 +296,7 @@ class _GroupedList extends StatelessWidget {
                     ),
                   ),
               ]
-              .animate(interval: 60.ms)
+              .staggered(interval: 60.ms)
               .fadeIn(duration: 350.ms)
               .moveY(begin: 16, end: 0, curve: Curves.easeOutCubic),
     );
@@ -363,7 +364,7 @@ class _SummaryChip extends StatelessWidget {
                     ? const SkeletonBox(height: 14, width: 60)
                     : AnimatedRupiah(
                         value!,
-                        compact: value! >= 10000000,
+                        scaleDown: true,
                         style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w800, color: color),
                       ),
               ],

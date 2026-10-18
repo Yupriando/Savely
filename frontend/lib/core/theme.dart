@@ -58,8 +58,11 @@ class AppTheme {
     );
 
     final base = ThemeData(useMaterial3: true, colorScheme: scheme, brightness: brightness);
+    // ThemeData.textTheme belum berisi ukuran huruf (baru ditambahkan MaterialApp belakangan),
+    // jadi gabungkan ukuran Material 3 dulu supaya gaya turunan di bawah (judul AppBar, tombol,
+    // label navigasi) tidak jatuh ke ukuran default 14px.
     final textTheme = GoogleFonts.plusJakartaSansTextTheme(
-      base.textTheme,
+      Typography.englishLike2021.merge(base.textTheme),
     ).apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
 
     final radius = BorderRadius.circular(16);

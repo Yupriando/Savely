@@ -10,6 +10,7 @@ import '../../widgets/category_icon.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
+import '../../widgets/stagger.dart';
 
 void openWallets(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WalletsScreen()));
@@ -106,7 +107,7 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
                           child: Column(children: [for (final t in list) _TransferTile(transfer: t)]),
                         ),
                 ),
-              ].animate(interval: 50.ms).fadeIn(duration: 350.ms).moveY(begin: 14, end: 0),
+              ].staggered(interval: 50.ms).fadeIn(duration: 350.ms).moveY(begin: 14, end: 0),
             );
           },
         ),

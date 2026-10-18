@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import '../../widgets/common.dart';
 import 'wishlist_detail_screen.dart';
 import 'wishlist_sheets.dart';
+import '../../widgets/stagger.dart';
 
 class WishlistScreen extends ConsumerStatefulWidget {
   const WishlistScreen({super.key});
@@ -84,7 +85,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                                         child: WishlistCard(wishlist: w),
                                       ),
                                   ]
-                                  .animate(interval: 70.ms)
+                                  .staggered(interval: 70.ms)
                                   .fadeIn(duration: 350.ms)
                                   .moveY(begin: 20, end: 0, curve: Curves.easeOutCubic),
                         ),

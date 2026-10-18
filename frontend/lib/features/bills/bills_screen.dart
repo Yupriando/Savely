@@ -10,13 +10,15 @@ import '../../widgets/category_icon.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
+import '../../widgets/stagger.dart';
 
 void openBills(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const BillsScreen()));
 }
 
-Color billStatusColor(BuildContext context, BillStatus s) => switch (s) {
-  BillStatus.overdue => AppColors.expense,
+/// Pemasukan yang belum diterima bukan tunggakan, jadi tidak merah.
+Color billStatusColor(BuildContext context, Bill b) => switch (b.status) {
+  BillStatus.overdue => b.type.isIncome ? AppColors.gold : AppColors.expense,
   BillStatus.dueSoon => AppColors.gold,
   BillStatus.upcoming => context.colors.primary,
   BillStatus.paid => AppColors.income,
@@ -25,12 +27,15 @@ Color billStatusColor(BuildContext context, BillStatus s) => switch (s) {
 
 /// "Jatuh tempo 3 hari lagi", "Hari ini", "Lewat 2 hari", "Dibayar 5 Okt".
 String billDueLabel(Bill b) {
-  if (b.isPaid) return 'Dibayar ${b.paidDate != null ? shortDate(b.paidDate!) : ''}'.trim();
+  final income = b.type.isIncome;
+  if (b.isPaid) {
+    return '${income ? 'Diterima' : 'Dibayar'} ${b.paidDate != null ? shortDate(b.paidDate!) : ''}'.trim();
+  }
   if (!b.isActive) return 'Nonaktif';
-  final verb = b.type.isIncome ? 'Diterima' : 'Jatuh tempo';
+  final verb = income ? 'Biasanya diterima' : 'Jatuh tempo';
   if (b.daysUntilDue == 0) return '$verb hari ini';
   if (b.daysUntilDue == 1) return '$verb besok';
-  if (b.daysUntilDue < 0) return 'Lewat ${-b.daysUntilDue} hari';
+  if (b.daysUntilDue < 0) return income ? 'Belum diterima' : 'Lewat ${-b.daysUntilDue} hari';
   return '$verb ${b.daysUntilDue} hari lagi';
 }
 
@@ -139,7 +144,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: BillCard(bill: b, month: _month),
                       ),
-                  ].animate(interval: 60.ms).fadeIn(duration: 350.ms).moveY(begin: 14, end: 0),
+                  ].staggered(interval: 60.ms).fadeIn(duration: 350.ms).moveY(begin: 14, end: 0),
                 );
               },
             ),
@@ -178,7 +183,7 @@ class BillCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final b = bill;
-    final statusColor = billStatusColor(context, b.status);
+    final statusColor = billStatusColor(context, b);
     final amountColor = b.type.isIncome ? AppColors.income : null;
 
     return Pressable(
@@ -253,7 +258,9 @@ class BillCard extends ConsumerWidget {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(0, 40),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    backgroundColor: b.status == BillStatus.overdue ? AppColors.expense : null,
+                    backgroundColor: b.type.isIncome
+                        ? AppColors.income
+                        : (b.status == BillStatus.overdue ? AppColors.expense : null),
                   ),
                   onPressed: () => showPayBillSheet(context, b, month),
                   child: Text(b.type.isIncome ? 'Terima' : 'Bayar'),
