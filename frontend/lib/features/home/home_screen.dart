@@ -299,19 +299,10 @@ class _Header extends ConsumerWidget {
                     child: child,
                   ),
                 ),
-                child: Row(
-                  key: ValueKey(greet.text),
-                  children: [
-                    Text(
-                      greet.text,
-                      style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(greet.emoji, style: const TextStyle(fontSize: 16))
-                        .animate(onPlay: (c) => c.repeat(reverse: true))
-                        .moveY(begin: -1.5, end: 1.5, duration: 1200.ms, curve: Curves.easeInOut)
-                        .rotate(begin: -0.04, end: 0.04, duration: 1200.ms),
-                  ],
+                child: Text(
+                  greet,
+                  key: ValueKey(greet),
+                  style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
                 ),
               ),
               const SizedBox(height: 2),

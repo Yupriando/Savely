@@ -12,6 +12,7 @@ import '../bills/bills_screen.dart';
 import '../budgets/budgets_screen.dart';
 import '../categories/categories_screen.dart';
 import '../wallets/wallets_screen.dart';
+import 'change_password_screen.dart';
 import 'edit_profile_screen.dart';
 import '../../widgets/stagger.dart';
 
@@ -79,6 +80,19 @@ class SettingsScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const SectionTitle('Akun'),
+                  const SizedBox(height: 10),
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: _MenuTile(
+                      icon: Icons.lock_reset_rounded,
+                      color: const Color(0xFF5C6BC0),
+                      title: 'Ganti password',
+                      subtitle: 'Masukkan password lama & password baru',
+                      onTap: () => openChangePassword(context),
                     ),
                   ),
                   const SizedBox(height: 24),

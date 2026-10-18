@@ -7,7 +7,7 @@ import 'package:frontend/widgets/user_avatar.dart';
 
 void main() {
   group('greetingFor mengikuti jam', () {
-    String at(int hour, [int minute = 0]) => greetingFor(DateTime(2026, 10, 18, hour, minute)).text;
+    String at(int hour, [int minute = 0]) => greetingFor(DateTime(2026, 10, 18, hour, minute));
 
     test('dini hari & malam = Selamat malam', () {
       expect(at(0), 'Selamat malam');

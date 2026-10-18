@@ -207,6 +207,10 @@ class ApiClient {
     return _user(await _send(() => _dio.post('/auth/me/avatar', data: form)));
   }
 
+  Future<void> changePassword({required String current, required String newPassword}) => _send(
+    () => _dio.post('/auth/me/password', data: {'current_password': current, 'new_password': newPassword}),
+  );
+
   Future<AppUser> removeAvatar() async => _user(await _send(() => _dio.delete('/auth/me/avatar')));
 
   // ---------------- Categories ----------------

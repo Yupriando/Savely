@@ -38,6 +38,16 @@ const UserSchema = registry.register(
   }),
 );
 
+const ChangePasswordBody = z
+  .object({
+    current_password: z.string().min(1, 'Password lama wajib diisi'),
+    new_password: z.string().min(6, 'Password baru minimal 6 karakter').max(72),
+  })
+  .refine((b) => b.current_password !== b.new_password, {
+    message: 'Password baru harus berbeda dari password lama',
+    path: ['new_password'],
+  });
+
 const UpdateProfileBody = z
   .object({
     full_name: z.string().trim().min(1).max(100).optional().openapi({ example: 'Budi Santoso' }),
@@ -126,6 +136,10 @@ function authError(error: { message?: string; status?: number } | null, fallback
   if (/already registered|already exists/i.test(msg)) return new HttpError(409, 'Email ini sudah terdaftar. Silakan login.');
   if (/signups not allowed|signups are disabled/i.test(msg)) {
     return new HttpError(403, 'Pendaftaran akun sedang dinonaktifkan di Supabase.');
+  }
+  if (/different from the old/i.test(msg)) return new HttpError(400, 'Password baru harus berbeda dari password lama.');
+  if (/reauthenticat/i.test(msg)) {
+    return new HttpError(400, 'Supabase meminta verifikasi ulang. Matikan "Secure password change" di Supabase Auth.');
   }
   if (/password should be|weak password/i.test(msg)) return new HttpError(400, 'Password terlalu lemah, minimal 6 karakter.');
   if (/email not confirmed/i.test(msg)) return new HttpError(401, 'Email belum dikonfirmasi. Cek inbox kamu.');
@@ -262,4 +276,33 @@ authRouter.delete('/me/avatar', requireAuth, async (req, res) => {
   if (error) throw storageError(error.message);
   const user = await updateAuthUser(req.accessToken, { data: { avatar_url: null } });
   res.json(toUser(user));
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/auth/me/password',
+  tags: ['Auth'],
+  summary: 'Ganti password (wajib memasukkan password lama)',
+  security,
+  request: { body: jsonBody(ChangePasswordBody) },
+  responses: {
+    200: ok(z.object({ message: z.string() }), 'Password diganti'),
+    400: errors[400],
+    401: errors[401],
+  },
+});
+authRouter.post('/me/password', requireAuth, async (req, res) => {
+  const body = validate(ChangePasswordBody, req.body);
+  const email = req.user.email;
+  if (!email) throw new HttpError(400, 'Akun ini tidak memakai email & password');
+
+  // Pastikan password lama benar (cegah orang lain yang memegang HP mengganti password)
+  const check = await supabaseAnon.auth.signInWithPassword({ email, password: body.current_password });
+  if (check.error) {
+    if (check.error.status === 429) throw authError(check.error, 'Terlalu banyak percobaan');
+    throw new HttpError(400, 'Password lama salah', [{ field: 'current_password', message: 'Password lama salah' }]);
+  }
+
+  await updateAuthUser(req.accessToken, { password: body.new_password });
+  res.json({ message: 'Password berhasil diganti' });
 });
