@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,500,1,0&family=Plus+Jakarta+Sans:wght@800&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1024px; height: 1024px; background: transparent; overflow: hidden; }
+  .stage { position: relative; width: 1024px; height: 1024px; }
+  .bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #064E3B 0%, #059669 55%, #10B981 100%);
+  }
+  .bg::before { /* cahaya lembut di kanan atas */
+    content: ''; position: absolute; width: 760px; height: 760px; right: -260px; top: -300px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(110,231,183,.45), rgba(110,231,183,0) 70%);
+  }
+  .bg::after { /* kilau emas di kiri bawah */
+    content: ''; position: absolute; width: 700px; height: 700px; left: -300px; bottom: -320px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(245,158,11,.30), rgba(245,158,11,0) 70%);
+  }
+  .art { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--scale, 1)); width: 1024px; height: 1024px; }
+  .pig {
+    position: absolute; left: 50%; top: 575px; transform: translate(-50%, -50%);
+    font-family: 'Material Symbols Rounded'; font-size: 600px; line-height: 1; color: #fff;
+    filter: drop-shadow(0 24px 40px rgba(2, 44, 34, .35));
+  }
+  .coin {
+    position: absolute; left: 50%; top: 255px; transform: translate(-50%, -50%) rotate(-12deg);
+    width: 230px; height: 230px; border-radius: 50%;
+    background: linear-gradient(135deg, #B45309, #F59E0B 55%, #FCD34D);
+    border: 14px solid #FDE68A; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans'; font-weight: 800; font-size: 92px; color: #fff; letter-spacing: -2px;
+    box-shadow: 0 18px 36px rgba(180, 83, 9, .45);
+  }
+  /* Versi satu warna (themed icon Android 13+): semua putih */
+  body.mono .pig { color: #fff; filter: none; }
+  body.mono .coin { background: #fff; border-color: #fff; color: transparent; box-shadow: none; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="bg" id="bg"></div>
+    <div class="art" id="art">
+      <div class="pig">savings</div>
+      <div class="coin">Rp</div>
+    </div>
+  </div>
+  <script>
+    // ?mode=full | foreground | background | mono
+    const mode = new URLSearchParams(location.search).get('mode') || 'full';
+    const art = document.getElementById('art');
+    const bg = document.getElementById('bg');
+    if (mode === 'background') art.remove();
+    if (mode === 'foreground' || mode === 'mono') {
+      bg.remove();
+      // Jarak tepi adaptive icon ditambahkan flutter_launcher_icons (inset 16%),
+      // diperbesar sedikit supaya celengan tidak terlihat kecil di layar HP
+      art.style.setProperty('--scale', '1.15');
+    }
+    if (mode === 'mono') document.body.classList.add('mono');
+    document.fonts.ready.then(() => (document.title = 'ready'));
+  </script>
+</body>
+</html>

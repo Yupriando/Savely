@@ -11,6 +11,7 @@ import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
 import '../../widgets/stagger.dart';
+import '../../core/sound.dart';
 
 void openBills(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const BillsScreen()));
@@ -174,7 +175,7 @@ class BillCard extends ConsumerWidget {
     try {
       await ref.read(apiProvider).unpayBill(bill.id, month);
       refreshFinance(ref);
-      if (context.mounted) showSnack(context, 'Pembayaran dibatalkan');
+      if (context.mounted) showSnack(context, 'Pembayaran dibatalkan', sound: Sfx.delete);
     } catch (e) {
       if (context.mounted) showSnack(context, e.toString(), error: true);
     }
@@ -313,7 +314,11 @@ class _PaySheetState extends ConsumerState<_PaySheet> {
       refreshFinance(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSuccess(context, '${widget.bill.name}\n${widget.bill.type.isIncome ? 'diterima' : 'lunas'} ✔');
+      showSuccess(
+        context,
+        '${widget.bill.name}\n${widget.bill.type.isIncome ? 'diterima' : 'lunas'} ✔',
+        sound: widget.bill.type.isIncome ? Sfx.coin : null,
+      );
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     } finally {
@@ -439,7 +444,7 @@ class _BillFormState extends ConsumerState<_BillForm> {
       refreshFinance(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSnack(context, 'Tagihan dihapus');
+      showSnack(context, 'Tagihan dihapus', sound: Sfx.delete);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     }

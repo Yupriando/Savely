@@ -34,6 +34,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).valueOrNull;
     final mode = ref.watch(themeModeProvider);
+    final soundOn = ref.watch(soundEnabledProvider);
     final name = user?.displayName ?? '';
 
     return Scaffold(
@@ -147,6 +148,25 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: SwitchListTile(
+                      secondary: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+                        child: Icon(
+                          soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                          key: ValueKey(soundOn),
+                          color: soundOn ? context.colors.primary : context.colors.onSurfaceVariant,
+                        ),
+                      ),
+                      title: const Text('Efek suara', style: TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: const Text('Bunyi saat menyimpan, uang masuk, dan menghapus'),
+                      value: soundOn,
+                      onChanged: (v) => ref.read(soundEnabledProvider.notifier).set(v),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   const SectionTitle('Tentang'),

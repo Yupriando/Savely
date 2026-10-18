@@ -11,6 +11,7 @@ import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
 import '../../widgets/stagger.dart';
+import '../../core/sound.dart';
 
 void openBudgets(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const BudgetsScreen()));
@@ -290,7 +291,7 @@ class _BudgetFormState extends ConsumerState<_BudgetForm> {
       refreshFinance(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSnack(context, 'Anggaran dihapus');
+      showSnack(context, 'Anggaran dihapus', sound: Sfx.delete);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     }

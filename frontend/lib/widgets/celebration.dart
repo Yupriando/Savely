@@ -4,11 +4,12 @@ import 'dart:ui' show PathMetric;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/sound.dart';
 import '../core/theme.dart';
 
 /// Tampilkan animasi sukses (lingkaran + centang tergambar) di atas semua layar.
 /// [confetti] = true untuk momen spesial, misalnya target wishlist tercapai.
-void showSuccess(BuildContext context, String message, {bool confetti = false}) {
+void showSuccess(BuildContext context, String message, {bool confetti = false, Sfx? sound}) {
   final overlay = Overlay.of(context, rootOverlay: true);
   late OverlayEntry entry;
   entry = OverlayEntry(
@@ -16,6 +17,7 @@ void showSuccess(BuildContext context, String message, {bool confetti = false}) 
   );
   overlay.insert(entry);
   HapticFeedback.mediumImpact();
+  SoundFx.play(sound ?? (confetti ? Sfx.celebrate : Sfx.success));
 }
 
 class _SuccessView extends StatefulWidget {

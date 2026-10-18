@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/sound.dart';
 import 'data/providers.dart';
 import 'data/token_store.dart';
 
@@ -12,6 +13,7 @@ Future<void> main() async {
   await initializeDateFormatting('id_ID');
   final prefs = await SharedPreferences.getInstance();
   final tokens = await TokenStore.load(prefs);
+  await SoundFx.init(enabled: prefs.getBool(SoundEnabledNotifier.key) ?? true);
 
   runApp(
     ProviderScope(

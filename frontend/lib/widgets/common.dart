@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/format.dart';
+import '../core/sound.dart';
 import '../core/theme.dart';
 
 /// Efek "ditekan" (mengecil sedikit) untuk elemen yang bisa diklik.
@@ -430,7 +431,10 @@ class PillTabs extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => onChanged(i),
+                        onTap: () {
+                          if (i != index) SoundFx.play(Sfx.tap);
+                          onChanged(i);
+                        },
                         child: Center(
                           child: AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 200),
@@ -453,7 +457,9 @@ class PillTabs extends StatelessWidget {
   }
 }
 
-void showSnack(BuildContext context, String message, {bool error = false}) {
+void showSnack(BuildContext context, String message, {bool error = false, Sfx? sound}) {
+  final sfx = error ? Sfx.error : sound;
+  if (sfx != null) SoundFx.play(sfx);
   final messenger = ScaffoldMessenger.of(context);
   messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
