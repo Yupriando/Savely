@@ -21,6 +21,14 @@ Skema database ada di `supabase/migrations/`. Jalankan **berurutan** di Supabase
 | `20261018030000_update_default_categories.sql` | Listrik & Air digabung, IPL, Kiriman Orang Tua |
 | `20261018040000_wallets_budgets_bills.sql` | Dompet, transfer, anggaran, tagihan rutin |
 
+## Deploy
+
+**Vercel** (gratis, tanpa kartu): New Project → import repo → **Root Directory: `backend`** →
+isi Environment Variables `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `APP_TIMEZONE=Asia/Jakarta`,
+`CORS_ORIGIN=*` → Deploy. Konfigurasinya ada di `vercel.json`, pintu masuknya `api/index.js`.
+
+**Render**: Blueprints → pilih repo (memakai `render.yaml` di root repo).
+
 ## Swagger
 
 Buka **http://localhost:3000/docs**. Spesifikasi OpenAPI mentahnya ada di `/docs.json`.

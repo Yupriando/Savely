@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "regions": ["sin1"],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "includeFiles": "{dist/**,node_modules/swagger-ui-dist/**}"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+}
