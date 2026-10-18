@@ -11,7 +11,9 @@ const Summary = registry.register(
   z.object({
     total_income: rupiah,
     total_expense: rupiah,
-    balance: rupiah.openapi({ description: 'Pemasukan - pengeluaran' }),
+    total_saved: rupiah.openapi({ description: 'Bersih disetor ke tabungan wishlist' }),
+    balance: rupiah.openapi({ description: 'Sisa uang: pemasukan - pengeluaran - ditabung' }),
+    cashflow: rupiah.openapi({ description: 'Pemasukan - pengeluaran' }),
     transaction_count: z.number().int(),
   }),
 );
@@ -55,11 +57,11 @@ const MAX_RANGE_DAYS = 366;
 
 // ---------- helper pemanggil fungsi SQL ----------
 
-async function getSummary(db: SupabaseClient, start: string, end: string) {
+export async function getSummary(db: SupabaseClient, start: string, end: string) {
   return unwrap(await db.rpc('get_period_summary', { p_start: start, p_end: end }).single());
 }
 
-async function getBreakdown(db: SupabaseClient, start: string, end: string, type: 'income' | 'expense') {
+export async function getBreakdown(db: SupabaseClient, start: string, end: string, type: 'income' | 'expense') {
   const rows = unwrap(
     await db.rpc('get_category_breakdown', { p_start: start, p_end: end, p_type: type }),
   ) as { total: number }[];

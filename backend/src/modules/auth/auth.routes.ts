@@ -80,7 +80,7 @@ async function updateAuthUser(accessToken: string, body: Record<string, unknown>
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     const message = (json.msg ?? json.message ?? json.error_description ?? 'Gagal memperbarui profil') as string;
-    throw new HttpError(res.status === 429 ? 429 : 400, message);
+    throw authError({ message, status: res.status }, message);
   }
   return json as unknown as User;
 }
@@ -117,6 +117,22 @@ const toUser = (u: User) => ({
   created_at: u.created_at,
 });
 
+/** Terjemahkan error Supabase Auth ke pesan bahasa Indonesia + status yang tepat. */
+function authError(error: { message?: string; status?: number } | null, fallback: string, status = 400): HttpError {
+  const msg = error?.message ?? '';
+  if (error?.status === 429 || /rate limit/i.test(msg)) {
+    return new HttpError(429, 'Terlalu banyak percobaan. Tunggu beberapa menit, lalu coba lagi.');
+  }
+  if (/already registered|already exists/i.test(msg)) return new HttpError(409, 'Email ini sudah terdaftar. Silakan login.');
+  if (/signups not allowed|signups are disabled/i.test(msg)) {
+    return new HttpError(403, 'Pendaftaran akun sedang dinonaktifkan di Supabase.');
+  }
+  if (/password should be|weak password/i.test(msg)) return new HttpError(400, 'Password terlalu lemah, minimal 6 karakter.');
+  if (/email not confirmed/i.test(msg)) return new HttpError(401, 'Email belum dikonfirmasi. Cek inbox kamu.');
+  if (/invalid email|unable to validate email/i.test(msg)) return new HttpError(400, 'Format email tidak valid.');
+  return new HttpError(status, fallback);
+}
+
 const toSession = (s: Session | null) =>
   s ? { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at ?? null } : null;
 
@@ -137,7 +153,7 @@ authRouter.post('/register', async (req, res) => {
     password: body.password,
     options: { data: { full_name: body.full_name } },
   });
-  if (error || !data.user) throw new HttpError(400, error?.message ?? 'Gagal mendaftar');
+  if (error || !data.user) throw authError(error, error?.message ?? 'Gagal mendaftar');
   res.status(201).json({ user: toUser(data.user), session: toSession(data.session) });
 });
 
@@ -153,7 +169,7 @@ registry.registerPath({
 authRouter.post('/login', async (req, res) => {
   const body = validate(LoginBody, req.body);
   const { data, error } = await supabaseAnon.auth.signInWithPassword(body);
-  if (error || !data.user) throw new HttpError(401, 'Email atau password salah');
+  if (error || !data.user) throw authError(error, 'Email atau password salah', 401);
   res.json({ user: toUser(data.user), session: toSession(data.session) });
 });
 
