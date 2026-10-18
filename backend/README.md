@@ -10,7 +10,16 @@ cp .env.example .env   # isi SUPABASE_URL & SUPABASE_ANON_KEY
 npm run dev            # http://localhost:3000
 ```
 
-Skema database ada di `supabase/migrations/` (jalankan di Supabase SQL Editor).
+Skema database ada di `supabase/migrations/`. Jalankan **berurutan** di Supabase SQL Editor
+(masing-masing cukup sekali):
+
+| File | Isi |
+|---|---|
+| `20261018000000_initial_schema.sql` | Tabel utama, RLS, kategori bawaan, fungsi laporan |
+| `20261018010000_grant_authenticated.sql` | Izin akses role `authenticated` |
+| `20261018020000_avatars_storage.sql` | Bucket foto profil |
+| `20261018030000_update_default_categories.sql` | Listrik & Air digabung, IPL, Kiriman Orang Tua |
+| `20261018040000_wallets_budgets_bills.sql` | Dompet, transfer, anggaran, tagihan rutin |
 
 ## Swagger
 
