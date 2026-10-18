@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/sound.dart';
 import '../../data/providers.dart';
 import '../home/home_screen.dart';
 import '../reports/reports_screen.dart';
@@ -22,7 +23,10 @@ class MainShell extends ConsumerWidget {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
-        onDestinationSelected: (i) => ref.read(shellTabProvider.notifier).state = i,
+        onDestinationSelected: (i) {
+          if (i != index) SoundFx.play(Sfx.tap);
+          ref.read(shellTabProvider.notifier).state = i;
+        },
         animationDuration: const Duration(milliseconds: 500),
         destinations: [
           for (final (icon, selected, label) in const [

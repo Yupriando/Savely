@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart';
+import '../../core/sound.dart';
 import '../../core/theme.dart';
 import '../../data/providers.dart';
 import '../../widgets/app_logo.dart';
@@ -23,6 +24,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   /// true kalau cek login > 6 detik (biasanya server gratis sedang "bangun").
   bool _slow = false;
   Timer? _slowTimer;
+  Timer? _coinTimer;
 
   @override
   void initState() {
@@ -30,12 +32,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     _slowTimer = Timer(const Duration(seconds: 6), () {
       if (mounted) setState(() => _slow = true);
     });
+    // "Cling" tepat saat koin masuk ke celengan (animasi koin selesai di ~1,25 detik).
+    // Di browser bisa tidak berbunyi karena suara otomatis diblokir sebelum ada interaksi.
+    _coinTimer = Timer(const Duration(milliseconds: 1250), () => SoundFx.play(Sfx.coin));
     _start();
   }
 
   @override
   void dispose() {
     _slowTimer?.cancel();
+    _coinTimer?.cancel();
     super.dispose();
   }
 

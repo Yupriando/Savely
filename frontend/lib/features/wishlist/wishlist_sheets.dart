@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
+import '../../core/sound.dart';
 
 // =============================================================
 // Form tambah / ubah wishlist
@@ -357,6 +358,7 @@ class _SavingSheetState extends ConsumerState<_SavingSheet> {
             ? 'Berhasil menabung ${rupiah(amount)}'
             : 'Berhasil menarik ${rupiah(amount)}',
         confetti: reached,
+        sound: !reached && !_isEdit && _deposit ? Sfx.coin : null,
       );
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
@@ -378,7 +380,7 @@ class _SavingSheetState extends ConsumerState<_SavingSheet> {
       refreshWishlists(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSnack(context, 'Catatan tabungan dihapus');
+      showSnack(context, 'Catatan tabungan dihapus', sound: Sfx.delete);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     }

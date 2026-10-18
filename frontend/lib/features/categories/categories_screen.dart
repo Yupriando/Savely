@@ -10,6 +10,7 @@ import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
 import '../../widgets/stagger.dart';
+import '../../core/sound.dart';
 
 void openCategories(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CategoriesScreen()));
@@ -137,7 +138,7 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
       refreshCategories(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSnack(context, 'Kategori dihapus');
+      showSnack(context, 'Kategori dihapus', sound: Sfx.delete);
     } catch (e) {
       if (!mounted) return;
       final inUse = e.toString().contains('masih dipakai');

@@ -1,0 +1,28 @@
+# Ikon aplikasi Savely. Sumber desain: assets/icon/source.html
+# Buat ulang semua ukuran ikon: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+
+  android: true
+  min_sdk_android: 21
+  adaptive_icon_background: "assets/icon/background.png"
+  adaptive_icon_foreground: "assets/icon/foreground.png"
+  adaptive_icon_monochrome: "assets/icon/monochrome.png" # themed icon Android 13+
+
+  ios: true
+  remove_alpha_ios: true
+
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#022C22"
+    theme_color: "#059669"
+
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 256
+
+  macos:
+    generate: true
+    image_path: "assets/icon/icon.png"

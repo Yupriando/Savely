@@ -13,6 +13,7 @@ import '../../widgets/common.dart';
 import '../../widgets/transaction_tile.dart';
 import 'transaction_form_sheet.dart';
 import '../../widgets/stagger.dart';
+import '../../core/sound.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
@@ -204,7 +205,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         onDeleted: (t) {
                           setState(() => _removed.add(t.id));
                           refreshFinance(ref);
-                          showSnack(context, 'Transaksi dihapus');
+                          showSnack(context, 'Transaksi dihapus', sound: Sfx.delete);
                         },
                       ),
                     ),

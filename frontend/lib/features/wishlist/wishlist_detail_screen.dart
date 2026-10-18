@@ -12,6 +12,7 @@ import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import 'wishlist_sheets.dart';
 import '../../widgets/stagger.dart';
+import '../../core/sound.dart';
 
 void openWishlistDetail(BuildContext context, Wishlist wishlist) {
   Navigator.of(
@@ -62,7 +63,7 @@ class WishlistDetailScreen extends ConsumerWidget {
       refreshWishlists(ref);
       if (!context.mounted) return;
       Navigator.pop(context);
-      showSnack(context, 'Impian dihapus');
+      showSnack(context, 'Impian dihapus', sound: Sfx.delete);
     } catch (e) {
       if (context.mounted) showSnack(context, e.toString(), error: true);
     }

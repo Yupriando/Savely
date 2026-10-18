@@ -11,6 +11,7 @@ import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
 import '../../widgets/stagger.dart';
+import '../../core/sound.dart';
 
 void openWallets(BuildContext context) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WalletsScreen()));
@@ -271,7 +272,7 @@ class _TransferTile extends ConsumerWidget {
               try {
                 await ref.read(apiProvider).deleteTransfer(t.id);
                 refreshFinance(ref);
-                if (context.mounted) showSnack(context, 'Transfer dihapus');
+                if (context.mounted) showSnack(context, 'Transfer dihapus', sound: Sfx.delete);
               } catch (e) {
                 if (context.mounted) showSnack(context, e.toString(), error: true);
               }
@@ -365,7 +366,7 @@ class _WalletFormState extends ConsumerState<_WalletForm> {
       refreshFinance(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSnack(context, 'Dompet dihapus');
+      showSnack(context, 'Dompet dihapus', sound: Sfx.delete);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     }

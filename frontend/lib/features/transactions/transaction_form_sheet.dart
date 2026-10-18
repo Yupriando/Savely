@@ -11,6 +11,7 @@ import '../../widgets/category_icon.dart';
 import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
+import '../../core/sound.dart';
 
 /// Buka form tambah transaksi, atau ubah kalau [existing] diisi.
 Future<void> showTransactionForm(BuildContext context, {Transaction? existing}) {
@@ -100,7 +101,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       refreshFinance(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSuccess(context, _isEdit ? 'Transaksi diperbarui' : '${_type.label} ${rupiah(amount)}\ndicatat');
+      showSuccess(
+        context,
+        _isEdit ? 'Transaksi diperbarui' : '${_type.label} ${rupiah(amount)}\ndicatat',
+        // Uang masuk -> bunyi koin
+        sound: !_isEdit && _type.isIncome ? Sfx.coin : null,
+      );
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     } finally {
@@ -120,7 +126,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       refreshFinance(ref);
       if (!mounted) return;
       Navigator.pop(context);
-      showSnack(context, 'Transaksi dihapus');
+      showSnack(context, 'Transaksi dihapus', sound: Sfx.delete);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     }

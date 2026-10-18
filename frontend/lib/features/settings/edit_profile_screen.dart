@@ -9,6 +9,7 @@ import '../../widgets/celebration.dart';
 import '../../widgets/common.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/stagger.dart';
+import '../../core/sound.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -129,7 +130,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     setState(() => _uploading = true);
     try {
       await ref.read(authProvider.notifier).removeAvatar();
-      if (mounted) showSnack(context, 'Foto profil dihapus');
+      if (mounted) showSnack(context, 'Foto profil dihapus', sound: Sfx.delete);
     } catch (e) {
       if (mounted) showSnack(context, e.toString(), error: true);
     } finally {

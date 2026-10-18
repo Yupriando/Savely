@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/format.dart';
+import '../core/sound.dart';
 import 'api_client.dart';
 import 'models.dart';
 
@@ -28,6 +29,24 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   void set(ThemeMode mode) {
     state = mode;
     ref.read(sharedPrefsProvider).setString(_key, mode.name);
+  }
+}
+
+// ---------------- Efek suara ----------------
+
+final soundEnabledProvider = NotifierProvider<SoundEnabledNotifier, bool>(SoundEnabledNotifier.new);
+
+class SoundEnabledNotifier extends Notifier<bool> {
+  static const key = 'sound_enabled';
+
+  @override
+  bool build() => ref.read(sharedPrefsProvider).getBool(key) ?? true;
+
+  void set(bool enabled) {
+    state = enabled;
+    SoundFx.enabled = enabled;
+    ref.read(sharedPrefsProvider).setBool(key, enabled);
+    if (enabled) SoundFx.play(Sfx.success); // contoh bunyinya
   }
 }
 
