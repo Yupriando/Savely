@@ -1,18 +1,23 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show ValueNotifier;
 
 import '../core/config.dart';
 import 'models.dart';
+import 'response_cache.dart';
 import 'token_store.dart';
 
 export 'token_store.dart';
 
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode});
+  const ApiException(this.message, {this.statusCode, this.isNetwork = false});
 
   final String message;
   final int? statusCode;
+
+  /// true = gagal karena jaringan/server tidak terjangkau (bukan karena datanya ditolak).
+  final bool isNetwork;
 
   @override
   String toString() => message;
@@ -26,28 +31,42 @@ class ApiClient {
   static const _receiveTimeout = Duration(seconds: 75);
   static const _maxTransientRetries = 2;
 
-  /// [adapter] hanya untuk test (server palsu).
-  ApiClient(this.tokens, {required this.onSessionExpired, HttpClientAdapter? adapter})
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: AppConfig.apiUrl,
-          connectTimeout: _connectTimeout,
-          receiveTimeout: _receiveTimeout,
-          contentType: Headers.jsonContentType,
-        ),
-      ) {
+  /// [adapter] hanya untuk test (server palsu). [cache] = salinan data untuk mode offline.
+  ApiClient(
+    this.tokens, {
+    required this.onSessionExpired,
+    HttpClientAdapter? adapter,
+    this.cache,
+    bool initiallyOnline = true,
+  }) : _dio = Dio(
+         BaseOptions(
+           baseUrl: AppConfig.apiUrl,
+           connectTimeout: _connectTimeout,
+           receiveTimeout: _receiveTimeout,
+           contentType: Headers.jsonContentType,
+         ),
+       ) {
+    online.value = initiallyOnline;
     if (adapter != null) {
       _dio.httpClientAdapter = adapter;
       _plainDio.httpClientAdapter = adapter;
     }
     _dio.interceptors.add(
-      QueuedInterceptorsWrapper(onRequest: _attachToken, onError: _refreshOnUnauthorized),
+      QueuedInterceptorsWrapper(
+        onRequest: _attachToken,
+        onResponse: _onResponse,
+        onError: _refreshOnUnauthorized,
+      ),
     );
   }
 
   final Dio _dio;
   final TokenStore tokens;
+  final ResponseCache? cache;
   final void Function() onSessionExpired;
+
+  /// false = permintaan terakhir gagal karena jaringan (app sedang offline).
+  final online = ValueNotifier<bool>(true);
 
   static const _publicPaths = {'/auth/login', '/auth/register', '/auth/refresh'};
 
@@ -57,6 +76,28 @@ class ApiClient {
       options.headers['Authorization'] = 'Bearer $token';
     }
     handler.next(options);
+  }
+
+  void _onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
+    online.value = true;
+    _store(response);
+    handler.next(response);
+  }
+
+  /// Simpan respons GET (JSON) untuk dipakai saat offline.
+  void _store(Response<dynamic> response) {
+    final o = response.requestOptions;
+    if (cache == null || o.method != 'GET' || o.responseType != ResponseType.json) return;
+    if (response.statusCode != 200 || response.data == null) return;
+    cache!.write(ResponseCache.keyFor(o.path, o.queryParameters), response.data).ignore();
+  }
+
+  /// Respons dari cache (data terakhir yang pernah dimuat), atau null kalau belum ada.
+  Response<dynamic>? _fromCache(RequestOptions o) {
+    if (cache == null || o.method != 'GET') return null;
+    final data = cache!.read(ResponseCache.keyFor(o.path, o.queryParameters));
+    if (data == null) return null;
+    return Response(requestOptions: o, data: data, statusCode: 200, extra: {'fromCache': true});
   }
 
   /// Dio polos (tanpa interceptor) untuk refresh token & mengulang request,
@@ -77,23 +118,40 @@ class ApiClient {
   }
 
   /// Penanganan error:
-  /// 1. Gangguan sementara pada request GET -> coba lagi (maks. 2x, jeda 2 lalu 4 detik).
+  /// 1. Gangguan sementara pada request GET -> coba lagi (maks. 2x, jeda 2 lalu 4 detik),
+  ///    lalu pakai data terakhir dari cache. Kalau sudah diketahui offline, langsung pakai cache.
   ///    POST/PATCH/DELETE tidak diulang supaya data tidak tercatat dobel.
   /// 2. Access token kedaluwarsa (401) -> perbarui pakai refresh token, lalu ulangi request.
   ///    Hanya logout kalau refresh token benar-benar ditolak server, bukan karena gangguan jaringan.
   Future<void> _refreshOnUnauthorized(DioException err, ErrorInterceptorHandler handler) async {
     final options = err.requestOptions;
 
-    final attempt = (options.extra['transientRetry'] as int?) ?? 0;
-    if (options.method == 'GET' && _isTransient(err) && attempt < _maxTransientRetries) {
-      await Future<void>.delayed(Duration(seconds: 2 * (attempt + 1)));
-      options.extra['transientRetry'] = attempt + 1;
-      try {
-        return handler.resolve(await _plainDio.fetch(options));
-      } on DioException catch (e) {
-        // Masih gagal: coba lagi lewat handler ini (tanpa antre ulang)
-        return _refreshOnUnauthorized(e, handler);
+    if (_isTransient(err)) {
+      final wasOnline = online.value;
+      online.value = false;
+
+      if (options.method == 'GET') {
+        final attempt = (options.extra['transientRetry'] as int?) ?? 0;
+        // Sudah offline sebelumnya: jangan buat user menunggu, langsung tampilkan data terakhir
+        final cached = _fromCache(options);
+        if (!wasOnline && cached != null) return handler.resolve(cached);
+
+        if (attempt < _maxTransientRetries) {
+          await Future<void>.delayed(Duration(seconds: 2 * (attempt + 1)));
+          options.extra['transientRetry'] = attempt + 1;
+          try {
+            final res = await _plainDio.fetch(options);
+            online.value = true;
+            _store(res);
+            return handler.resolve(res);
+          } on DioException catch (e) {
+            // Masih gagal: coba lagi lewat handler ini (tanpa antre ulang)
+            return _refreshOnUnauthorized(e, handler);
+          }
+        }
+        if (cached != null) return handler.resolve(cached);
       }
+      return handler.next(err);
     }
 
     final refreshToken = tokens.refreshToken;
@@ -130,7 +188,9 @@ class ApiClient {
     options.extra['retried'] = true;
     options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
     try {
-      handler.resolve(await _plainDio.fetch(options));
+      final res = await _plainDio.fetch(options);
+      _store(res);
+      handler.resolve(res);
     } on DioException catch (e) {
       handler.next(e);
     }
@@ -147,21 +207,30 @@ class ApiClient {
   ApiException _toApiException(DioException e) {
     final data = e.response?.data;
     if (data is Map && data['error'] is Map && data['error']['message'] != null) {
-      return ApiException(data['error']['message'] as String, statusCode: e.response?.statusCode);
+      return ApiException(
+        data['error']['message'] as String,
+        statusCode: e.response?.statusCode,
+        isNetwork: _isTransient(e),
+      );
     }
     switch (e.type) {
       case DioExceptionType.connectionError:
       case DioExceptionType.connectionTimeout:
         return const ApiException(
           'Tidak bisa terhubung ke server. Cek internet kamu, atau coba lagi sebentar lagi.',
+          isNetwork: true,
         );
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return const ApiException('Server sedang bangun atau sibuk. Tunggu sebentar lalu coba lagi.');
+        return const ApiException(
+          'Server sedang bangun atau sibuk. Tunggu sebentar lalu coba lagi.',
+          isNetwork: true,
+        );
       default:
         return ApiException(
           'Terjadi kesalahan (${e.response?.statusCode ?? 'jaringan'})',
           statusCode: e.response?.statusCode,
+          isNetwork: _isTransient(e),
         );
     }
   }
@@ -195,7 +264,10 @@ class ApiClient {
 
   Future<AppUser> me() async => _user(await _send(() => _dio.get('/auth/me')));
 
-  Future<void> logout() => tokens.clear();
+  Future<void> logout() async {
+    await tokens.clear();
+    await cache?.clear();
+  }
 
   Future<AppUser> updateProfile({String? fullName, String? email}) async =>
       _user(await _send(() => _dio.patch('/auth/me', data: {'full_name': ?fullName, 'email': ?email})));
@@ -277,16 +349,19 @@ class ApiClient {
     int amount,
     DateTime date,
     String? note,
-    String? walletId,
-  ) => {
+    String? walletId, [
+    String? clientId,
+  ]) => {
     'type': type.name,
     'category_id': categoryId,
     'amount': amount,
     'transaction_date': _iso(date),
     'note': _nullIfEmpty(note),
     'wallet_id': ?walletId,
+    'client_id': ?clientId,
   };
 
+  /// [clientId]: ID unik dari antrean offline; dikirim ulang dengan ID sama tidak membuat dobel.
   Future<void> createTransaction({
     required TxType type,
     required String categoryId,
@@ -294,8 +369,10 @@ class ApiClient {
     required DateTime date,
     String? note,
     String? walletId,
-  }) =>
-      _send(() => _dio.post('/transactions', data: _txBody(type, categoryId, amount, date, note, walletId)));
+    String? clientId,
+  }) => _send(
+    () => _dio.post('/transactions', data: _txBody(type, categoryId, amount, date, note, walletId, clientId)),
+  );
 
   Future<void> updateTransaction(
     String id, {

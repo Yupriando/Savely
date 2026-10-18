@@ -68,9 +68,14 @@ const CreateBody = z.object({
   note: z.string().max(255).nullable().optional().openapi({ example: 'Makan siang' }),
   transaction_date: dateString.optional().openapi({ description: 'Default: hari ini' }),
   wallet_id: z.string().uuid().optional().openapi({ description: 'Default: dompet utama' }),
+  client_id: z
+    .string()
+    .uuid()
+    .optional()
+    .openapi({ description: 'ID dari aplikasi untuk transaksi offline; kirim ulang dengan ID sama tidak membuat dobel' }),
 });
 
-const UpdateBody = CreateBody.partial().refine(
+const UpdateBody = CreateBody.omit({ client_id: true }).partial().refine(
   (b) => b.type === undefined || b.category_id !== undefined,
   { message: 'Kalau mengubah type, category_id juga harus dikirim', path: ['category_id'] },
 );
@@ -228,20 +233,36 @@ registry.registerPath({
   responses: { 201: ok(TransactionSchema, 'Transaksi dibuat'), 400: errors[400] },
 });
 transactionsRouter.post('/', async (req, res) => {
-  const body = validate(CreateBody, req.body);
-  const created = unwrap(
-    await req.db
-      .from('transactions')
-      .insert({
-        ...body,
-        transaction_date: body.transaction_date ?? today(),
-        wallet_id: body.wallet_id ?? (await getDefaultWalletId(req.db)),
-        user_id: req.user.id,
-      })
-      .select(COLUMNS)
-      .single(),
-  );
-  res.status(201).json(created);
+  const { client_id, ...body } = validate(CreateBody, req.body);
+  const row: Record<string, unknown> = {
+    ...body,
+    transaction_date: body.transaction_date ?? today(),
+    wallet_id: body.wallet_id ?? (await getDefaultWalletId(req.db)),
+    user_id: req.user.id,
+  };
+
+  let result = await req.db
+    .from('transactions')
+    .insert(client_id ? { ...row, client_id } : row)
+    .select(COLUMNS)
+    .single();
+
+  // Kolom client_id belum ada (migration anti-dobel belum dijalankan): simpan tanpa client_id
+  if (result.error?.code === 'PGRST204' && client_id) {
+    result = await req.db.from('transactions').insert(row).select(COLUMNS).single();
+  }
+
+  // Transaksi offline yang sama dikirim ulang -> kembalikan yang sudah tersimpan, jangan dobel
+  if (result.error?.code === '23505' && client_id) {
+    const existing = unwrap(
+      await req.db.from('transactions').select(COLUMNS).eq('client_id', client_id).single(),
+      'Transaksi',
+    );
+    res.status(200).json(existing);
+    return;
+  }
+
+  res.status(201).json(unwrap(result));
 });
 
 registry.registerPath({

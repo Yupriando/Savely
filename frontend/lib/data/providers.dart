@@ -5,10 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/format.dart';
 import '../core/sound.dart';
 import 'api_client.dart';
+import 'response_cache.dart';
 import 'models.dart';
 
 /// Di-override di main() setelah SharedPreferences siap.
 final sharedPrefsProvider = Provider<SharedPreferences>((_) => throw UnimplementedError());
+
+/// false kalau HP tidak terhubung ke jaringan saat app dibuka (di-override di main()).
+/// Dengan begitu app langsung memakai data terakhir tanpa menunggu percobaan ulang.
+final initialOnlineProvider = Provider<bool>((_) => true);
 
 /// Di-override di main() setelah sesi login dimuat dari penyimpanan aman.
 final tokenStoreProvider = Provider<TokenStore>((_) => throw UnimplementedError());
@@ -56,6 +61,8 @@ final apiProvider = Provider<ApiClient>((ref) {
   return ApiClient(
     ref.read(tokenStoreProvider),
     onSessionExpired: () => ref.read(authProvider.notifier).sessionExpired(),
+    cache: ResponseCache(ref.read(sharedPrefsProvider)),
+    initiallyOnline: ref.read(initialOnlineProvider),
   );
 });
 
@@ -251,18 +258,25 @@ final wishlistDetailProvider = FutureProvider.autoDispose.family<Wishlist, Strin
 );
 
 /// Panggil setelah menambah/mengubah/menghapus data supaya semua layar ikut ter-update.
-void refreshFinance(WidgetRef ref) {
-  ref.invalidate(recentTransactionsProvider);
-  ref.invalidate(pagedTransactionsProvider);
-  ref.invalidate(monthlyReportProvider);
-  ref.invalidate(dailyReportProvider);
-  ref.invalidate(trendProvider);
-  ref.invalidate(insightsProvider);
-  ref.invalidate(walletsProvider);
-  ref.invalidate(allWalletsProvider);
-  ref.invalidate(transfersProvider);
-  ref.invalidate(budgetsProvider);
-  ref.invalidate(billsProvider);
+void refreshFinance(WidgetRef ref) => invalidateFinance(ref.invalidate);
+
+/// Versi umum [refreshFinance]: bisa dipanggil dari widget maupun dari Notifier (mis. antrean offline).
+void invalidateFinance(void Function(ProviderOrFamily) invalidate) {
+  for (final p in <ProviderOrFamily>[
+    recentTransactionsProvider,
+    pagedTransactionsProvider,
+    monthlyReportProvider,
+    dailyReportProvider,
+    trendProvider,
+    insightsProvider,
+    walletsProvider,
+    allWalletsProvider,
+    transfersProvider,
+    budgetsProvider,
+    billsProvider,
+  ]) {
+    invalidate(p);
+  }
 }
 
 /// Tabungan wishlist juga mengubah saldo dompet & ringkasan "ditabung".

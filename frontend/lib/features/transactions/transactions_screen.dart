@@ -8,6 +8,7 @@ import '../../core/export.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
+import '../../data/offline_queue.dart';
 import '../../data/providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/transaction_tile.dart';
@@ -73,6 +74,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       message: '${t.category.name} ${rupiah(t.amount)} akan dihapus permanen.',
     );
     if (!ok) return false;
+    // Belum terkirim: cukup dibuang dari antrean di HP
+    if (t.isPending) {
+      await ref.read(syncProvider.notifier).remove(t.pendingClientId!);
+      return true;
+    }
     try {
       await ref.read(apiProvider).deleteTransaction(t.id);
       return true;
@@ -87,6 +93,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final month = ref.watch(selectedMonthProvider);
     final query = (month: month, type: _type, search: _search);
     final txs = ref.watch(pagedTransactionsProvider(query));
+    // Transaksi yang dicatat offline & belum terkirim ikut ditampilkan di atas
+    final pending = ref.watch(syncProvider).matching(month: month, type: _type, search: _search);
     final report = ref.watch(monthlyReportProvider(month)).valueOrNull;
 
     return Scaffold(
@@ -166,7 +174,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               value: txs,
               onRetry: () => ref.invalidate(pagedTransactionsProvider),
               builder: (state) {
-                final list = state.items.where((t) => !_removed.contains(t.id)).toList();
+                final list = [...pending, ...state.items].where((t) => !_removed.contains(t.id)).toList();
                 if (list.isEmpty) {
                   return EmptyState(
                     icon: _search.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded,

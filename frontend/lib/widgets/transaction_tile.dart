@@ -29,7 +29,30 @@ class TransactionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            CategoryIcon(icon: t.category.icon, color: t.category.color),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CategoryIcon(icon: t.category.icon, color: t.category.color),
+                // Belum terkirim ke server
+                if (t.isPending)
+                  Positioned(
+                    right: -5,
+                    bottom: -5,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: context.colors.surfaceContainerLow,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        t.syncError != null ? Icons.error_rounded : Icons.cloud_upload_rounded,
+                        size: 16,
+                        color: t.syncError != null ? AppColors.expense : AppColors.gold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -39,6 +62,16 @@ class TransactionTile extends StatelessWidget {
                     t.category.name,
                     style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                   ),
+                  if (t.isPending)
+                    Text(
+                      t.syncError != null ? 'Gagal dikirim: ${t.syncError}' : 'Menunggu dikirim',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelSmall?.copyWith(
+                        color: t.syncError != null ? AppColors.expense : AppColors.gold,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   if (subtitle.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
