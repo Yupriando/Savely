@@ -38,12 +38,12 @@ String relativeDay(DateTime d) {
 }
 
 /// Sapaan sesuai jam sistem: pagi 04–10, siang 11–14, sore 15–17, malam 18–03.
-({String text, String emoji}) greetingFor(DateTime time) {
+String greetingFor(DateTime time) {
   final h = time.hour;
-  if (h >= 4 && h < 11) return (text: 'Selamat pagi', emoji: '🌤️');
-  if (h >= 11 && h < 15) return (text: 'Selamat siang', emoji: '☀️');
-  if (h >= 15 && h < 18) return (text: 'Selamat sore', emoji: '🌇');
-  return (text: 'Selamat malam', emoji: '🌙');
+  if (h >= 4 && h < 11) return 'Selamat pagi';
+  if (h >= 11 && h < 15) return 'Selamat siang';
+  if (h >= 15 && h < 18) return 'Selamat sore';
+  return 'Selamat malam';
 }
 
 int parseAmount(String text) => int.tryParse(text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;

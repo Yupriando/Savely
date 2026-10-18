@@ -68,11 +68,14 @@ function save(name, buf, peak = 0.55) {
 
 const NOTE = { C6: 1046.5, E6: 1318.5, G6: 1568.0, B5: 987.8, C7: 2093.0, E7: 2637.0, G7: 3136.0, A4: 440, E4: 329.6, C4: 261.6 };
 
-// tap: "tik" halus & singkat untuk ganti tab / pilihan
+// tap: denting dua koin kecil beradu ("cring-cring") untuk ganti tab / pilihan.
+// Rasio parsial tidak harmonis (1 : 2.76 : 5.4) memberi kesan logam/koin.
 {
-  const b = buffer(0.06);
-  sweep(b, { from: 1900, to: 1100, dur: 0.045, amp: 0.6 });
-  save('tap', b, 0.32);
+  const b = buffer(0.26);
+  const coin = [[1, 1], [2.76, 0.45], [5.4, 0.18]];
+  bell(b, { freq: 2350, start: 0, amp: 0.55, decay: 0.045, attack: 0.001, partials: coin });
+  bell(b, { freq: 3050, start: 0.045, amp: 0.45, decay: 0.07, attack: 0.001, partials: coin });
+  save('tap', b, 0.3);
 }
 
 // success: dua nada naik (C6 -> G6), cerah tapi lembut
