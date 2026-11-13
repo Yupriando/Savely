@@ -7,6 +7,11 @@ import { registry, z } from '../../docs/registry';
 import { HttpError } from '../../lib/errors';
 import { supabaseAnon } from '../../lib/supabase';
 import { validate } from '../../lib/validate';
+
+// Akun demo bersama (dipakai di "Try It Live" portofolio, email & password-nya ditampilkan publik):
+// password & email tidak boleh diganti supaya demo tetap bisa dipakai semua orang.
+const DEMO_EMAIL = 'demo@savely.app';
+const isDemo = (email?: string | null) => email?.toLowerCase() === DEMO_EMAIL;
 import { requireAuth } from '../../middleware/auth';
 
 const RegisterBody = z.object({
@@ -227,6 +232,9 @@ registry.registerPath({
 });
 authRouter.patch('/me', requireAuth, async (req, res) => {
   const body = validate(UpdateProfileBody, req.body);
+  if (body.email !== undefined && isDemo(req.user.email) && body.email.toLowerCase() !== DEMO_EMAIL) {
+    throw new HttpError(403, 'Email akun demo tidak bisa diganti');
+  }
   const changes: Record<string, unknown> = {};
   if (body.full_name !== undefined) changes.data = { full_name: body.full_name };
   if (body.email !== undefined && body.email.toLowerCase() !== req.user.email?.toLowerCase()) {
@@ -295,6 +303,7 @@ authRouter.post('/me/password', requireAuth, async (req, res) => {
   const body = validate(ChangePasswordBody, req.body);
   const email = req.user.email;
   if (!email) throw new HttpError(400, 'Akun ini tidak memakai email & password');
+  if (isDemo(email)) throw new HttpError(403, 'Password akun demo tidak bisa diganti');
 
   // Pastikan password lama benar (cegah orang lain yang memegang HP mengganti password)
   const check = await supabaseAnon.auth.signInWithPassword({ email, password: body.current_password });
