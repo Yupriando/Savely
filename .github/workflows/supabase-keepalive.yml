@@ -1,0 +1,47 @@
+# Menjaga project Supabase (free plan) tetap aktif.
+# Supabase mem-pause project yang tidak ada aktivitas selama 7 hari.
+# Workflow ini mengirim 1 query kecil ke database setiap 2 hari.
+#
+# Butuh 2 secret di GitHub > Settings > Secrets and variables > Actions:
+#   SUPABASE_URL       contoh: https://xxxxxxxxxxxx.supabase.co
+#   SUPABASE_ANON_KEY  anon / publishable key (BUKAN service_role)
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "0 1 */2 * *" # setiap 2 hari, jam 08:00 WIB
+  workflow_dispatch: # bisa dijalankan manual dari tab Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Kirim query ke database Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Secret SUPABASE_URL / SUPABASE_ANON_KEY belum diisi"
+            exit 1
+          fi
+
+          # Query ke tabel lewat REST API -> diproses oleh Postgres (dihitung aktivitas).
+          # Role anon tidak punya izin baca, jadi jawabannya "permission denied" (401)
+          # dan tidak ada data yang keluar. Itu normal & dianggap berhasil.
+          status=$(curl -s -o response.txt -w "%{http_code}" --max-time 60 \
+            --retry 3 --retry-delay 20 \
+            "${SUPABASE_URL%/}/rest/v1/categories?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+
+          echo "HTTP status: $status"
+          if [ "$status" -ge 200 ] && [ "$status" -lt 500 ]; then
+            echo "Supabase aktif"
+          else
+            echo "::error::Supabase tidak merespons (status $status). Mungkin sudah ter-pause, cek dashboard Supabase."
+            cat response.txt
+            exit 1
+          fi
